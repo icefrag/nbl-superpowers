@@ -1,72 +1,72 @@
-# Update Codemaps
+# 更新代码地图
 
-Analyze the codebase structure and generate token-lean architecture documentation.
+分析代码库结构并生成 token 精简的架构文档。
 
-## Step 1: Scan Project Structure
+## 步骤 1：扫描项目结构
 
-1. Identify the project type (monorepo, single app, library, microservice)
-2. Find all source directories (src/, lib/, app/, packages/)
-3. Map entry points (main.ts, index.ts, app.py, main.go, etc.)
+1. 识别项目类型（monorepo、单应用、库、微服务）
+2. 查找所有源代码目录（src/、lib/、app/、packages/）
+3. 映射入口点（main.ts、index.ts、app.py、main.go 等）
 
-## Step 2: Generate Codemaps
+## 步骤 2：生成代码地图
 
-Create or update codemaps in `docs/CODEMAPS/` (or `.reports/codemaps/`):
+在 `docs/CODEMAPS/`（或 `.reports/codemaps/`）中创建或更新代码地图：
 
-| File | Contents |
-|------|----------|
-| `architecture.md` | High-level system diagram, service boundaries, data flow |
-| `backend.md` | API routes, middleware chain, service → repository mapping |
-| `frontend.md` | Page tree, component hierarchy, state management flow |
-| `data.md` | Database tables, relationships, migration history |
-| `dependencies.md` | External services, third-party integrations, shared libraries |
+| 文件 | 内容 |
+|------|------|
+| `architecture.md` | 高层系统图、服务边界、数据流 |
+| `backend.md` | API 路由、中间件链、服务 → 仓库映射 |
+| `frontend.md` | 页面树、组件层级、状态管理流 |
+| `data.md` | 数据库表、关系、迁移历史 |
+| `dependencies.md` | 外部服务、第三方集成、共享库 |
 
-### Codemap Format
+### 代码地图格式
 
-Each codemap should be token-lean — optimized for AI context consumption:
+每个代码地图应保持 token 精简 —— 针对 AI 上下文消费进行优化：
 
 ```markdown
-# Backend Architecture
+# 后端架构
 
-## Routes
+## 路由
 POST /api/users → UserController.create → UserService.create → UserRepo.insert
 GET  /api/users/:id → UserController.get → UserService.findById → UserRepo.findById
 
-## Key Files
-src/services/user.ts (business logic, 120 lines)
-src/repos/user.ts (database access, 80 lines)
+## 关键文件
+src/services/user.ts (业务逻辑, 120 行)
+src/repos/user.ts (数据库访问, 80 行)
 
-## Dependencies
-- PostgreSQL (primary data store)
-- Redis (session cache, rate limiting)
-- Stripe (payment processing)
+## 依赖
+- PostgreSQL (主数据存储)
+- Redis (会话缓存, 限流)
+- Stripe (支付处理)
 ```
 
-## Step 3: Diff Detection
+## 步骤 3：差异检测
 
-1. If previous codemaps exist, calculate the diff percentage
-2. If changes > 30%, show the diff and request user approval before overwriting
-3. If changes <= 30%, update in place
+1. 如果存在之前的代码地图，计算差异百分比
+2. 如果变更 > 30%，显示差异并在覆盖前请求用户确认
+3. 如果变更 <= 30%，直接原地更新
 
-## Step 4: Add Metadata
+## 步骤 4：添加元数据
 
-Add a freshness header to each codemap:
+为每个代码地图添加新鲜度标头：
 
 ```markdown
-<!-- Generated: 2026-02-11 | Files scanned: 142 | Token estimate: ~800 -->
+<!-- 生成时间: 2026-02-11 | 扫描文件: 142 | Token 估算: ~800 -->
 ```
 
-## Step 5: Save Analysis Report
+## 步骤 5：保存分析报告
 
-Write a summary to `.reports/codemap-diff.txt`:
-- Files added/removed/modified since last scan
-- New dependencies detected
-- Architecture changes (new routes, new services, etc.)
-- Staleness warnings for docs not updated in 90+ days
+将摘要写入 `.reports/codemap-diff.txt`：
+- 自上次扫描以来新增/删除/修改的文件
+- 检测到的新依赖
+- 架构变更（新路由、新服务等）
+- 超过 90 天未更新文档的过期警告
 
-## Tips
+## 提示
 
-- Focus on **high-level structure**, not implementation details
-- Prefer **file paths and function signatures** over full code blocks
-- Keep each codemap under **1000 tokens** for efficient context loading
-- Use ASCII diagrams for data flow instead of verbose descriptions
-- Run after major feature additions or refactoring sessions
+- 聚焦**高层结构**，而非实现细节
+- 优先使用**文件路径和函数签名**，而非完整代码块
+- 每个代码地图保持在 **1000 token 以内**，便于高效加载上下文
+- 使用 ASCII 图表展示数据流，替代冗长的文字描述
+- 在完成重大功能新增或重构会话后运行
