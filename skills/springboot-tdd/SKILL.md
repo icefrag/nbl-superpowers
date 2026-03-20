@@ -1,27 +1,56 @@
 ---
 name: springboot-tdd
-description: Test-driven development for Spring Boot using JUnit 5, Mockito, MockMvc, Testcontainers, and JaCoCo. Use when adding features, fixing bugs, or refactoring.
-origin: ECC
+description: Spring Boot测试驱动开发，使用JUnit 5、Mockito、MockMvc、Testcontainers和JaCoCo。在添加功能、修复bug或重构时使用。
 ---
 
-# Spring Boot TDD Workflow
+# Spring Boot TDD工作流
 
-TDD guidance for Spring Boot services with 80%+ coverage (unit + integration).
+Spring Boot服务的TDD指南，要求80%以上覆盖率（单元测试 + 集成测试）。
 
-## When to Use
+## 使用时机
 
-- New features or endpoints
-- Bug fixes or refactors
-- Adding data access logic or security rules
+- 新功能或新端点
+- Bug修复或重构
+- 添加数据访问逻辑或安全规则
 
-## Workflow
+- 编写Service/Manager单元测试
+- 编写Controller集成测试
 
-1) Write tests first (they should fail)
-2) Implement minimal code to pass
-3) Refactor with tests green
-4) Enforce coverage (JaCoCo)
+## 项目结构与测试策略
 
-## Unit Tests (JUnit 5 + Mockito)
+### 测试文件位置（与生产代码同包）
+```
+app/src/test/java/com/guozhi/api/[项目名称]/[业务名称]/
+├── controller/
+│   └── [业务名称]ControllerTest.java      # Controller集成测试
+└── service/
+    ├── [业务名称]ServiceTest.java          # Service单元测试
+    └── manager/
+        └── [业务名称]ManagerTest.java       # Manager单元测试
+```
+
+### 测试类型分配
+
+| 层级 | 测试类型 | 框架 | 说明 |
+|------|---------|------|------|
+| **Controller** | 集成测试 | @SpringBootTest + MockMvc | 测试API契约、参数验证、HTTP状态 |
+| **Service** | 单元测试 | @ExtendWith(MockitoExtension.class) | Mock依赖，测试业务逻辑 |
+| **Manager** | 单元测试 | @ExtendWith(MockitoExtension.class) | Mock依赖，测试数据组装逻辑 |
+
+### 命名规范
+- 单元测试：`{ClassName}Test`
+- 集成测试：`{ClassName}Test`（Controller层）
+
+## 工作流
+
+1) 先写测试（应该失败）
+2) 实现最小代码使其通过
+3) 在测试通过的前提下重构
+4) 强制覆盖率（JaCoCo）
+
+## 单元测试（JUnit 5 + Mockito）
+
+适用于：**Service层** 和 **Manager层**
 
 ```java
 @ExtendWith(MockitoExtension.class)
@@ -42,36 +71,19 @@ class MarketServiceTest {
 }
 ```
 
-Patterns:
-- Arrange-Act-Assert
-- Avoid partial mocks; prefer explicit stubbing
-- Use `@ParameterizedTest` for variants
+模式：
+- Arrange-Act-Assert（准备-执行-断言）
+- 避免部分Mock；优先显式stub
+- 变体场景使用 `@ParameterizedTest`
 
-## Web Layer Tests (MockMvc)
+## 集成测试（SpringBootTest）
 
-```java
-@WebMvcTest(MarketController.class)
-class MarketControllerTest {
-  @Autowired MockMvc mockMvc;
-  @MockBean MarketService marketService;
-
-  @Test
-  void returnsMarkets() throws Exception {
-    when(marketService.list(any())).thenReturn(Page.empty());
-
-    mockMvc.perform(get("/api/markets"))
-        .andExpect(status().isOk())
-        .andExpect(jsonPath("$.content").isArray());
-  }
-}
-```
-
-## Integration Tests (SpringBootTest)
+适用于：**Controller层**
 
 ```java
 @SpringBootTest
 @AutoConfigureMockMvc
-@ActiveProfiles("test")
+@ActiveProfiles("dev")
 class MarketIntegrationTest {
   @Autowired MockMvc mockMvc;
 
@@ -87,35 +99,14 @@ class MarketIntegrationTest {
 }
 ```
 
-## Persistence Tests (DataJpaTest)
-
-```java
-@DataJpaTest
-@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
-@Import(TestContainersConfig.class)
-class MarketRepositoryTest {
-  @Autowired MarketRepository repo;
-
-  @Test
-  void savesAndFinds() {
-    MarketEntity entity = new MarketEntity();
-    entity.setName("Test");
-    repo.save(entity);
-
-    Optional<MarketEntity> found = repo.findByName("Test");
-    assertThat(found).isPresent();
-  }
-}
-```
-
 ## Testcontainers
 
-- Use reusable containers for Postgres/Redis to mirror production
-- Wire via `@DynamicPropertySource` to inject JDBC URLs into Spring context
+- 使用可复用容器运行Postgres/Redis，模拟生产环境
+- 通过 `@DynamicPropertySource` 将JDBC URL注入Spring上下文
 
-## Coverage (JaCoCo)
+## 覆盖率（JaCoCo）
 
-Maven snippet:
+Maven配置：
 ```xml
 <plugin>
   <groupId>org.jacoco</groupId>
@@ -134,13 +125,13 @@ Maven snippet:
 </plugin>
 ```
 
-## Assertions
+## 断言
 
-- Prefer AssertJ (`assertThat`) for readability
-- For JSON responses, use `jsonPath`
-- For exceptions: `assertThatThrownBy(...)`
+- 优先使用AssertJ（`assertThat`）以提高可读性
+- JSON响应使用 `jsonPath`
+- 异常使用：`assertThatThrownBy(...)`
 
-## Test Data Builders
+## 测试数据构建器
 
 ```java
 class MarketBuilder {
@@ -150,9 +141,9 @@ class MarketBuilder {
 }
 ```
 
-## CI Commands
+## CI命令
 
-- Maven: `mvn -T 4 test` or `mvn verify`
+- Maven: `mvn -T 4 test` 或 `mvn verify`
 - Gradle: `./gradlew test jacocoTestReport`
 
-**Remember**: Keep tests fast, isolated, and deterministic. Test behavior, not implementation details.
+**记住**：保持测试快速、隔离、确定性。测试行为，而非实现细节。

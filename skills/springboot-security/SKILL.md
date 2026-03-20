@@ -1,28 +1,27 @@
 ---
 name: springboot-security
-description: Spring Security best practices for authn/authz, validation, CSRF, secrets, headers, rate limiting, and dependency security in Java Spring Boot services.
-origin: ECC
+description: Spring Security最佳实践，涵盖认证/授权、输入验证、CSRF、密钥管理、安全头、限流和依赖安全，用于Java Spring Boot服务。
 ---
 
-# Spring Boot Security Review
+# Spring Boot安全审查
 
-Use when adding auth, handling input, creating endpoints, or dealing with secrets.
+在添加认证、处理输入、创建端点或处理密钥时使用。
 
-## When to Activate
+## 激活时机
 
-- Adding authentication (JWT, OAuth2, session-based)
-- Implementing authorization (@PreAuthorize, role-based access)
-- Validating user input (Bean Validation, custom validators)
-- Configuring CORS, CSRF, or security headers
-- Managing secrets (Vault, environment variables)
-- Adding rate limiting or brute-force protection
-- Scanning dependencies for CVEs
+- 添加认证（JWT、OAuth2、基于会话）
+- 实现授权（@PreAuthorize、基于角色的访问控制）
+- 验证用户输入（Bean Validation、自定义验证器）
+- 配置CORS、CSRF或安全头
+- 管理密钥（Vault、环境变量）
+- 添加限流或暴力破解防护
+- 扫描依赖项的CVE漏洞
 
-## Authentication
+## 认证
 
-- Prefer stateless JWT or opaque tokens with revocation list
-- Use `httpOnly`, `Secure`, `SameSite=Strict` cookies for sessions
-- Validate tokens with `OncePerRequestFilter` or resource server
+- 优先使用无状态的JWT或带撤销列表的不透明令牌
+- 会话使用 `httpOnly`、`Secure`、`SameSite=Strict` 的Cookie
+- 使用 `OncePerRequestFilter` 或资源服务器验证令牌
 
 ```java
 @Component
@@ -47,11 +46,11 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 }
 ```
 
-## Authorization
+## 授权
 
-- Enable method security: `@EnableMethodSecurity`
-- Use `@PreAuthorize("hasRole('ADMIN')")` or `@PreAuthorize("@authz.canEdit(#id)")`
-- Deny by default; expose only required scopes
+- 启用方法安全：`@EnableMethodSecurity`
+- 使用 `@PreAuthorize("hasRole('ADMIN')")` 或 `@PreAuthorize("@authz.canEdit(#id)")`
+- 默认拒绝；仅暴露必要的范围
 
 ```java
 @RestController
@@ -73,20 +72,20 @@ public class AdminController {
 }
 ```
 
-## Input Validation
+## 输入验证
 
-- Use Bean Validation with `@Valid` on controllers
-- Apply constraints on DTOs: `@NotBlank`, `@Email`, `@Size`, custom validators
-- Sanitize any HTML with a whitelist before rendering
+- 在Controller上使用Bean Validation的 `@Valid`
+- 在DTO上应用约束：`@NotBlank`、`@Email`、`@Size`、自定义验证器
+- 渲染前使用白名单消毒任何HTML
 
 ```java
-// BAD: No validation
+// 错误：无验证
 @PostMapping("/users")
 public User createUser(@RequestBody UserDto dto) {
   return userService.create(dto);
 }
 
-// GOOD: Validated DTO
+// 正确：验证DTO
 public record CreateUserDto(
     @NotBlank @Size(max = 100) String name,
     @NotBlank @Email String email,
@@ -100,45 +99,45 @@ public ResponseEntity<UserDto> createUser(@Valid @RequestBody CreateUserDto dto)
 }
 ```
 
-## SQL Injection Prevention
+## SQL注入防护
 
-- Use Spring Data repositories or parameterized queries
-- For native queries, use `:param` bindings; never concatenate strings
+- 使用Spring Data Repository或参数化查询
+- 原生查询使用 `:param` 绑定；永远不要拼接字符串
 
 ```java
-// BAD: String concatenation in native query
+// 错误：原生查询中的字符串拼接
 @Query(value = "SELECT * FROM users WHERE name = '" + name + "'", nativeQuery = true)
 
-// GOOD: Parameterized native query
+// 正确：参数化原生查询
 @Query(value = "SELECT * FROM users WHERE name = :name", nativeQuery = true)
 List<User> findByName(@Param("name") String name);
 
-// GOOD: Spring Data derived query (auto-parameterized)
+// 正确：Spring Data派生查询（自动参数化）
 List<User> findByEmailAndActiveTrue(String email);
 ```
 
-## Password Encoding
+## 密码加密
 
-- Always hash passwords with BCrypt or Argon2 — never store plaintext
-- Use `PasswordEncoder` bean, not manual hashing
+- 始终使用BCrypt或Argon2哈希密码 —— 永远不要存储明文
+- 使用 `PasswordEncoder` Bean，不要手动哈希
 
 ```java
 @Bean
 public PasswordEncoder passwordEncoder() {
-  return new BCryptPasswordEncoder(12); // cost factor 12
+  return new BCryptPasswordEncoder(12); // 代价因子12
 }
 
-// In service
+// 在Service中
 public User register(CreateUserDto dto) {
   String hashedPassword = passwordEncoder.encode(dto.password());
   return userRepository.save(new User(dto.email(), hashedPassword));
 }
 ```
 
-## CSRF Protection
+## CSRF防护
 
-- For browser session apps, keep CSRF enabled; include token in forms/headers
-- For pure APIs with Bearer tokens, disable CSRF and rely on stateless auth
+- 浏览器会话应用：保持CSRF启用；在表单/请求头中包含令牌
+- 纯Bearer令牌API：禁用CSRF，依赖无状态认证
 
 ```java
 http
@@ -146,24 +145,24 @@ http
   .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
 ```
 
-## Secrets Management
+## 密钥管理
 
-- No secrets in source; load from env or vault
-- Keep `application.yml` free of credentials; use placeholders
-- Rotate tokens and DB credentials regularly
+- 源代码中不放密钥；从环境变量或Vault加载
+- `application.yml` 中不放凭据；使用占位符
+- 定期轮换令牌和数据库凭据
 
 ```yaml
-# BAD: Hardcoded in application.yml
+# 错误：在application.yml中硬编码
 spring:
   datasource:
     password: mySecretPassword123
 
-# GOOD: Environment variable placeholder
+# 正确：环境变量占位符
 spring:
   datasource:
     password: ${DB_PASSWORD}
 
-# GOOD: Spring Cloud Vault integration
+# 正确：Spring Cloud Vault集成
 spring:
   cloud:
     vault:
@@ -171,7 +170,7 @@ spring:
       token: ${VAULT_TOKEN}
 ```
 
-## Security Headers
+## 安全头
 
 ```java
 http
@@ -183,10 +182,10 @@ http
     .referrerPolicy(rp -> rp.policy(ReferrerPolicyHeaderWriter.ReferrerPolicy.NO_REFERRER)));
 ```
 
-## CORS Configuration
+## CORS配置
 
-- Configure CORS at the security filter level, not per-controller
-- Restrict allowed origins — never use `*` in production
+- 在安全过滤器层面配置CORS，而非每个Controller
+- 限制允许的来源 —— 生产环境永远不要使用 `*`
 
 ```java
 @Bean
@@ -203,17 +202,17 @@ public CorsConfigurationSource corsConfigurationSource() {
   return source;
 }
 
-// In SecurityFilterChain:
+// 在SecurityFilterChain中：
 http.cors(cors -> cors.configurationSource(corsConfigurationSource()));
 ```
 
-## Rate Limiting
+## 限流
 
-- Apply Bucket4j or gateway-level limits on expensive endpoints
-- Log and alert on bursts; return 429 with retry hints
+- 在高消耗端点上使用Bucket4j或网关级别的限制
+- 记录并告警突发流量；返回429并附带重试提示
 
 ```java
-// Using Bucket4j for per-endpoint rate limiting
+// 使用Bucket4j进行端点限流
 @Component
 public class RateLimitFilter extends OncePerRequestFilter {
   private final Map<String, Bucket> buckets = new ConcurrentHashMap<>();
@@ -240,33 +239,33 @@ public class RateLimitFilter extends OncePerRequestFilter {
 }
 ```
 
-## Dependency Security
+## 依赖安全
 
-- Run OWASP Dependency Check / Snyk in CI
-- Keep Spring Boot and Spring Security on supported versions
-- Fail builds on known CVEs
+- 在CI中运行OWASP Dependency Check / Snyk
+- 保持Spring Boot和Spring Security在支持版本上
+- 发现已知CVE时构建失败
 
-## Logging and PII
+## 日志与PII
 
-- Never log secrets, tokens, passwords, or full PAN data
-- Redact sensitive fields; use structured JSON logging
+- 永远不要记录密钥、令牌、密码或完整的PAN数据
+- 脱敏敏感字段；使用结构化JSON日志
 
-## File Uploads
+## 文件上传
 
-- Validate size, content type, and extension
-- Store outside web root; scan if required
+- 验证大小、内容类型和扩展名
+- 存储在Web根目录之外；必要时扫描
 
-## Checklist Before Release
+## 发布前检查清单
 
-- [ ] Auth tokens validated and expired correctly
-- [ ] Authorization guards on every sensitive path
-- [ ] All inputs validated and sanitized
-- [ ] No string-concatenated SQL
-- [ ] CSRF posture correct for app type
-- [ ] Secrets externalized; none committed
-- [ ] Security headers configured
-- [ ] Rate limiting on APIs
-- [ ] Dependencies scanned and up to date
-- [ ] Logs free of sensitive data
+- [ ] 认证令牌已正确验证和过期
+- [ ] 每个敏感路径都有授权守卫
+- [ ] 所有输入已验证和消毒
+- [ ] 无字符串拼接的SQL
+- [ ] CSRF策略与应用类型匹配
+- [ ] 密钥已外部化；无提交
+- [ ] 安全头已配置
+- [ ] API已限流
+- [ ] 依赖已扫描且为最新版本
+- [ ] 日志无敏感数据
 
-**Remember**: Deny by default, validate inputs, least privilege, and secure-by-configuration first.
+**记住**：默认拒绝、验证输入、最小权限、配置优先的安全策略。
