@@ -1,24 +1,24 @@
-# Git Workflow
+# Git工作流
 
-## Commit Message Format
+## 提交消息格式
 ```
 <type>: <description>
 
 <optional body>
 ```
 
-Types: feat, fix, refactor, docs, test, chore, perf, ci
+类型：feat, fix, refactor, docs, test, chore, perf, ci
 
-Note: Attribution disabled globally via ~/.claude/settings.json.
+注意：署名已通过 ~/.claude/settings.json 全局禁用。
 
-## Pull Request Workflow
+## Pull Request工作流
 
-When creating PRs:
-1. Analyze full commit history (not just latest commit)
-2. Use `git diff [base-branch]...HEAD` to see all changes
-3. Draft comprehensive PR summary
-4. Include test plan with TODOs
-5. Push with `-u` flag if new branch
+创建PR时：
+1. 分析完整的提交历史（不仅是最新提交）
+2. 使用 `git diff [base-branch]...HEAD` 查看所有更改
+3. 起草全面的PR摘要
+4. 包含带TODO的测试计划
+5. 如果是新分支，使用 `-u` 标志推送
 
-> For the full development process (planning, TDD, code review) before git operations,
-> see [development-workflow.md](./development-workflow.md).
+> 完整的开发流程（规划、TDD、代码审查）在git操作之前，
+> 见 [development-workflow.md](./development-workflow.md)。

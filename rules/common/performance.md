@@ -1,55 +1,38 @@
-# Performance Optimization
+# 性能优化
 
-## Model Selection Strategy
+## 上下文窗口管理
 
-**Haiku 4.5** (90% of Sonnet capability, 3x cost savings):
-- Lightweight agents with frequent invocation
-- Pair programming and code generation
-- Worker agents in multi-agent systems
+避免在上下文窗口最后20%进行：
+- 大规模重构
+- 跨多文件的功能实现
+- 调试复杂交互
 
-**Sonnet 4.6** (Best coding model):
-- Main development work
-- Orchestrating multi-agent workflows
-- Complex coding tasks
+对上下文敏感度要求较低的任务：
+- 单文件编辑
+- 独立工具创建
+- 文档更新
+- 简单bug修复
 
-**Opus 4.5** (Deepest reasoning):
-- Complex architectural decisions
-- Maximum reasoning requirements
-- Research and analysis tasks
+## 扩展思考 + 规划模式
 
-## Context Window Management
+扩展思考默认启用，预留最多31,999个token用于内部推理。
 
-Avoid last 20% of context window for:
-- Large-scale refactoring
-- Feature implementation spanning multiple files
-- Debugging complex interactions
+通过以下方式控制扩展思考：
+- **切换**：Option+T（macOS）/ Alt+T（Windows/Linux）
+- **配置**：在 `~/.claude/settings.json` 中设置 `alwaysThinkingEnabled`
+- **预算上限**：`export MAX_THINKING_TOKENS=10000`
+- **详细模式**：Ctrl+O 查看思考输出
 
-Lower context sensitivity tasks:
-- Single-file edits
-- Independent utility creation
-- Documentation updates
-- Simple bug fixes
+对于需要深度推理的复杂任务：
+1. 确保扩展思考已启用（默认开启）
+2. 启用**规划模式**进行结构化方法
+3. 使用多轮批评进行彻底分析
+4. 使用分工子代理获取不同视角
 
-## Extended Thinking + Plan Mode
+## 构建故障排除
 
-Extended thinking is enabled by default, reserving up to 31,999 tokens for internal reasoning.
-
-Control extended thinking via:
-- **Toggle**: Option+T (macOS) / Alt+T (Windows/Linux)
-- **Config**: Set `alwaysThinkingEnabled` in `~/.claude/settings.json`
-- **Budget cap**: `export MAX_THINKING_TOKENS=10000`
-- **Verbose mode**: Ctrl+O to see thinking output
-
-For complex tasks requiring deep reasoning:
-1. Ensure extended thinking is enabled (on by default)
-2. Enable **Plan Mode** for structured approach
-3. Use multiple critique rounds for thorough analysis
-4. Use split role sub-agents for diverse perspectives
-
-## Build Troubleshooting
-
-If build fails:
-1. Use **build-error-resolver** agent
-2. Analyze error messages
-3. Fix incrementally
-4. Verify after each fix
+如果构建失败：
+1. 使用 **build-error-resolver** 代理
+2. 分析错误消息
+3. 增量修复
+4. 每次修复后验证
