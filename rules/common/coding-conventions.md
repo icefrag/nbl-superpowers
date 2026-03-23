@@ -69,6 +69,7 @@ userMapper.insert(entity);
 
 - **必须**: 所有Entity实体类继承`com.guozhi.api.framework.model.entity.BaseEntity`
 - **禁止**: 在子类Entity中重复定义id、createTime、updateTime、deleted字段
+- **必须**: is_deleted字段必须添加`@TableLogic`注解，明确标识逻辑删除字段
 
 ### 更新操作规范
 
