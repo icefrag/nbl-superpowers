@@ -63,7 +63,42 @@ userMapper.insert(entity);
 - 上述基础字段由BaseEntity统一定义，业务表Entity继承BaseEntity即可
 - 禁止在业务表Entity中重复定义上述字段
 - MyBatis-Plus逻辑删除插件会自动处理is_deleted字段
-- 所有字段不允许为空，必须设置默认值：字符串类型默认值为''，数字类型默认值为0
+
+### 字段默认值规范 (NON-NEGOTIABLE)
+
+除 `text` 和 `json` 类型外，所有字段必须指定默认值且不可为 `NULL`。
+
+| 字段类型 | 默认值 | 说明 |
+|---------|--------|------|
+| INT / BIGINT / TINYINT / SMALLINT | 0 | 所有整数类型 |
+| DECIMAL / DOUBLE / FLOAT | 0 | 所有小数类型 |
+| VARCHAR / CHAR | '' | 空字符串 |
+| DATETIME / TIMESTAMP | - | 时间类型可不设置默认值，允许NULL |
+| TEXT | - | 大文本类型，可不设置默认值 |
+| JSON | - | JSON类型，可不设置默认值 |
+
+**DDL示例**：
+
+```sql
+-- 正确
+CREATE TABLE `user` (
+  `id` BIGINT NOT NULL,
+  `name` VARCHAR(100) NOT NULL DEFAULT '',
+  `age` INT NOT NULL DEFAULT 0,
+  `status` TINYINT NOT NULL DEFAULT 0,
+  `remark` TEXT,
+  `extra` JSON,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- 错误：缺少默认值
+CREATE TABLE `user` (
+  `id` BIGINT NOT NULL,
+  `name` VARCHAR(100) NOT NULL,        -- 错误：缺少DEFAULT ''
+  `age` INT NOT NULL,                  -- 错误：缺少DEFAULT 0
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+```
 
 ### Entity定义规范
 
