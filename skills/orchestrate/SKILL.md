@@ -1,10 +1,19 @@
 ---
-description: 多代理工作流的顺序和 tmux/worktree 编排指南。
+name: orchestrate
+description: >
+  多代理工作流的顺序和 tmux/worktree 编排指南。
+  触发条件：复杂多步骤任务、需要多代理协作、用户请求编排。
 ---
 
-# Orchestrate 命令
+# Orchestrate Skill
 
-用于复杂任务的顺序agent工作流。
+用于复杂任务的顺序 agent 工作流。
+
+## 激活时机
+
+- 复杂多步骤任务
+- 需要多代理协作
+- 用户请求编排
 
 ## 使用方法
 
@@ -151,61 +160,6 @@ RECOMMENDATION
 ### 合并结果
 将输出合并为单一报告
 ```
-
-对于使用独立 git worktree 的外部 tmux-pane 工作器，使用 `node scripts/orchestrate-worktrees.js plan.json --execute`。内置编排模式保持在进程内；该辅助脚本用于长时间运行或跨 harness 会话的场景。
-
-当工作器需要查看主检出中的脏文件或未跟踪文件时，在计划文件中添加 `seedPaths`。ECC 仅将这些选定路径覆盖到每个工作器 worktree 中（在 `git worktree add` 之后），这样既保持分支隔离，又能暴露进行中的本地脚本、计划或文档。
-
-```json
-{
-  "sessionName": "workflow-e2e",
-  "seedPaths": [
-    "scripts/orchestrate-worktrees.js",
-    "scripts/lib/tmux-worktree-orchestrator.js",
-    ".claude/plan/workflow-e2e-test.json"
-  ],
-  "workers": [
-    { "name": "docs", "task": "更新编排文档。" }
-  ]
-}
-```
-
-要导出实时 tmux/worktree 会话的控制平面快照，运行：
-
-```bash
-node scripts/orchestration-status.js .claude/plan/workflow-visual-proof.json
-```
-
-快照包含会话活动、tmux pane 元数据、工作器状态、目标、种子覆盖和最近的交接摘要，以 JSON 形式呈现。
-
-## 操作员控制中心交接
-
-当工作流跨越多个会话、worktree 或 tmux pane 时，在最终交接文档中附加控制面块：
-
-```markdown
-CONTROL PLANE
--------------
-Sessions:
-- 活动会话 ID 或别名
-- 每个活动工作器的分支 + worktree 路径
-- tmux pane 或分离会话名称（如适用）
-
-Diffs:
-- git status 摘要
-- 涉及文件的 git diff --stat
-- 合并/冲突风险说明
-
-Approvals:
-- 待用户审批项
-- 等待确认的阻塞步骤
-
-Telemetry:
-- 最后活动时间戳或空闲信号
-- 预估 token 或成本消耗
-- hooks 或审查器触发的策略事件
-```
-
-这使 planner、implementer、reviewer 和循环工作器在操作员界面上清晰可见。
 
 ## 参数
 

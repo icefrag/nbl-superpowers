@@ -1,6 +1,23 @@
-# 测试覆盖率
+---
+name: test-coverage
+description: >
+  测试覆盖率分析，识别缺口，生成缺失的测试以达到80%+覆盖率。
+  触发条件：用户请求测试覆盖率分析、提升测试覆盖率、编写测试。
+rules:
+  - rules/common/architecture.md
+  - rules/common/naming.md
+  - rules/common/coding-conventions.md
+---
+
+# Test Coverage Skill
 
 分析测试覆盖率，识别缺口，生成缺失的测试以达到80%+覆盖率。
+
+## 激活时机
+
+- 用户请求测试覆盖率分析
+- 提升测试覆盖率
+- 编写缺失的测试
 
 ## 步骤0：识别测试范围（关键）
 
@@ -91,8 +108,6 @@
 
 ## 步骤3：生成缺失测试
 
-对于每个覆盖率不足的文件，按以下优先级生成测试：
-
 ### 测试优先级
 
 | 优先级 | 测试类型 | 覆盖目标 |
@@ -109,110 +124,6 @@
 - 使用项目现有的测试模式（import风格、断言库、Mock方式）
 - Mock外部依赖（数据库、外部API、文件系统）
 - 每个测试应该独立 — 测试之间不共享可变状态
-- 测试命名描述性：`should_return_discount_when_order_amount_exceeds_threshold`
-
-### 各层测试模板
-
-#### Service/Manager层单元测试
-
-```java
-@ExtendWith(MockitoExtension.class)
-class XxxServiceImplTest {
-
-    @InjectMocks
-    private XxxServiceImpl xxxService;
-
-    @Mock
-    private DependencyMapper dependencyMapper;
-
-    @Mock
-    private ExternalManager externalManager;
-
-    @Test
-    void should_return_success_when_valid_input() {
-        // Given
-        InputDTO input = InputDTO.builder()
-            .field("value")
-            .build();
-        when(dependencyMapper.selectById(any())).thenReturn(mockEntity);
-
-        // When
-        OutputDTO result = xxxService.method(input);
-
-        // Then
-        assertNotNull(result);
-        assertEquals("expected", result.getField());
-    }
-
-    @Test
-    void should_throw_business_exception_when_condition_not_met() {
-        // Given
-        InputDTO input = InputDTO.builder().build();
-
-        // When & Then
-        assertThrows(BusinessException.class, () -> {
-            xxxService.method(input);
-        });
-    }
-}
-```
-
-#### Controller层集成测试
-
-```java
-@SpringBootTest
-@AutoConfigureMockMvc
-class XxxControllerIntegrationTest {
-
-    @Autowired
-    private MockMvc mockMvc;
-
-    @Autowired
-    private ObjectMapper objectMapper;
-
-    @MockBean
-    private ExternalService externalService; // Mock外部依赖
-
-    @Test
-    void should_return_200_when_valid_request() throws Exception {
-        // Given
-        XxxReq request = XxxReq.builder()
-            .field("value")
-            .build();
-        when(externalService.callExternal(any())).thenReturn(mockResponse);
-
-        // When & Then
-        mockMvc.perform(post("/api/v1/xxx")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(request)))
-            .andExpect(status().isOk())
-            .andExpect(jsonPath("$.code").value("200"))
-            .andExpect(jsonPath("$.data.field").value("expected"));
-    }
-
-    @Test
-    void should_return_400_when_required_param_missing() throws Exception {
-        // When & Then
-        mockMvc.perform(post("/api/v1/xxx")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content("{}"))
-            .andExpect(status().isBadRequest());
-    }
-
-    @Test
-    void should_return_500_when_service_throws_exception() throws Exception {
-        // Given
-        when(externalService.callExternal(any()))
-            .thenThrow(new RuntimeException("External service error"));
-
-        // When & Then
-        mockMvc.perform(post("/api/v1/xxx")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(validRequest)))
-            .andExpect(status().is5xxServerError());
-    }
-}
-```
 
 ## 步骤4：验证
 
@@ -222,8 +133,6 @@ class XxxControllerIntegrationTest {
 
 ## 步骤5：报告
 
-显示前后对比：
-
 ```
 覆盖率报告（已排除Entity/DTO/Mapper/Config类）
 ──────────────────────────────────────────────────
@@ -232,21 +141,9 @@ class XxxControllerIntegrationTest {
 DiscountServiceImpl.java      45%    88%   ✅
 OrderServiceImpl.java         32%    82%   ✅
 OrderManagerImpl.java         55%    85%   ✅
-XxxController.java            40%    90%   ✅
-UserUtils.java                60%    92%   ✅
 ──────────────────────────────────────────────────
 总体覆盖率:                    46%    87%   ✅
 ```
-
-## 边界案例检查清单
-
-| 类型 | 测试值 |
-|------|--------|
-| 引用类型 | `null` |
-| 字符串 | `""`, `"  "`, 超长字符串 |
-| 集合 | 空集合, 单元素, 大集合 |
-| 数字 | `0`, `-1`, `Integer.MAX_VALUE`, `Integer.MIN_VALUE` |
-| 日期 | 过去, 现在, 未来, 边界日期 |
 
 ## 覆盖率目标
 
@@ -256,32 +153,3 @@ UserUtils.java                60%    92%   ✅
 | Service/Manager业务逻辑 | **80%+** | 单元测试 |
 | Controller层 | **80%+** | 集成测试 |
 | 工具类 | **80%+** | 单元测试 |
-
-## JaCoCo报告位置
-
-```bash
-# HTML报告
-target/site/jacoco/index.html
-
-# XML报告
-target/site/jacoco/jacoco.xml
-
-# CSV报告
-target/site/jacoco/jacoco.csv
-```
-
-## Maven命令
-
-```bash
-# 运行测试并生成覆盖率报告
-mvn test jacoco:report
-
-# 运行指定测试类
-mvn test -Dtest=XxxServiceImplTest jacoco:report
-
-# 仅运行Controller集成测试
-mvn test -Dtest="*ControllerIntegrationTest" jacoco:report
-
-# 查看覆盖率摘要
-mvn jacoco:report
-```

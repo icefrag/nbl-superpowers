@@ -175,3 +175,52 @@
 
 **项目规则目录完整路径**：`D:\workspace\guozhi-claude-code\rules\common\`
 **全局规则目录完整路径**：`C:\Users\icefr\.claude\rules\common\`
+
+## Skills 目录
+
+项目所有 skill 位于 `skills/` 目录，每个 skill 是一个独立文件夹，包含 `SKILL.md` 定义文件。
+
+### Skill 目录结构
+
+```
+skills/
+├── plan/                    # 需求规划和实现计划
+├── code-review/             # Java/Spring Boot 代码审查
+├── build-fix/               # 构建错误修复
+├── verify/                  # 综合验证系统
+├── orchestrate/              # 多代理工作流编排
+├── refactor-clean/          # 死代码清理
+├── test-coverage/           # 测试覆盖率分析
+├── save-session/            # 保存会话状态
+├── resume-session/          # 恢复会话
+├── update-codemaps/         # 更新代码地图
+├── update-docs/             # 更新文档
+├── update-rules/            # 规则文件更新
+├── tech-design/             # 技术设计文档生成
+├── prompt-optimizer/        # Prompt 优化分析
+├── springboot-tdd/          # 测试驱动开发
+├── springboot-patterns/     # Spring Boot 架构模式
+├── springboot-security/     # Spring Security 最佳实践
+├── springboot-verification/  # Spring Boot 验证模式
+├── java-coding-standards/   # Java 编码标准
+├── jpa-patterns/            # JPA 持久化模式
+├── coding-standards/        # 通用编码标准
+├── blueprint/               # 多会话工程项目规划
+├── verification-loop/       # 验证循环
+├── search-first/            # 搜索优先模式
+├── deep-research/           # 深度研究
+├── continuous-learning/     # 持续学习机制
+├── continuous-agent-loop/   # 持续代理循环
+├── autonomous-loops/        # 自主循环模式
+├── eval-harness/           # 评估框架
+├── strategic-compact/       # 战略精简
+├── plankton-code-quality/   # 代码质量检查
+└── iterative-retrieval/    # 迭代检索
+```
+
+### 调用方式
+
+所有 skills 都可以通过 `/skill-name` 方式调用，例如：
+- `/plan` - 需求规划
+- `/code-review` - 代码审查
+- `/verify` - 综合验证

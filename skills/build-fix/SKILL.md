@@ -1,16 +1,32 @@
-# 构建修复
+---
+name: build-fix
+description: >
+  Java/Maven/Gradle构建、编译和依赖错误解决专家。
+  修复构建错误、Java编译器错误和Maven/Gradle问题，仅用最小改动。
+  触发条件：构建失败时、编译错误、依赖问题。
+rules:
+  - rules/common/architecture.md
+  - rules/common/naming.md
+---
+
+# Build Fix Skill
 
 **以最小、安全的更改增量修复构建和编译错误。**
+
+## 激活时机
+
+- 构建失败时
+- Java 编译错误
+- Maven/Gradle 依赖问题
 
 ## 步骤1：检测构建系统
 
 **识别项目的构建工具并运行构建：**
 
-
-| **标识**           | **构建命令**            |
-| ------------------ | ----------------------- |
-| `pom.xml`          | `mvn compile`           |
-| `build.gradle`     | `./gradlew compileJava` |
+| 标识 | 构建命令 |
+|------|----------|
+| `pom.xml` | `mvn compile` |
+| `build.gradle` | `./gradlew compileJava` |
 | `build.gradle.kts` | `./gradlew compileJava` |
 
 ## 步骤2：解析和分组错误
@@ -34,10 +50,10 @@
 
 **遇到以下情况停止并询问用户：**
 
-* **修复****引入的错误比解决的还多**
+* **修复引入的错误比解决的还多**
 * **同一错误在3次尝试后仍然存在**（可能是更深层问题）
-* **修复需要****架构变更**（不仅仅是构建修复）
-* **构建错误源于****缺少依赖**（需要添加Maven依赖）
+* **修复需要架构变更**（不仅仅是构建修复）
+* **构建错误源于缺少依赖**（需要添加Maven依赖）
 
 ## 步骤5：总结
 
@@ -50,18 +66,17 @@
 
 ## Java Web常见错误恢复策略
 
-
-| **情况**            | **操作**                                                        |
-| ------------------- | --------------------------------------------------------------- |
-| **缺少import**      | **检查类是否存在于依赖中；添加正确的import语句**                |
-| **类型不匹配**      | **读取两个类型定义；修复较窄的类型**                            |
-| **循环依赖**        | **用import图识别循环；建议提取公共层**                          |
-| **版本冲突**        | **检查pom.xml中的版本约束；使用dependency:tree分析**            |
-| **Maven配置错误**   | **读取pom.xml；与工作配置对比**                                 |
-| **Lombok注解错误**  | **检查是否安装Lombok插件；检查@Builder需要@AllArgsConstructor** |
-| **Spring注入失败**  | **检查@Component/@Service注解；检查构造器注入**                 |
-| **MyBatis映射错误** | **检查Mapper接口与XML是否匹配；检查namespace**                  |
-| **Entity继承错误**  | **检查是否继承BaseEntity；检查是否重复定义id字段**              |
+| 情况 | 操作 |
+|------|------|
+| **缺少import** | 检查类是否存在于依赖中；添加正确的import语句 |
+| **类型不匹配** | 读取两个类型定义；修复较窄的类型 |
+| **循环依赖** | 用import图识别循环；建议提取公共层 |
+| **版本冲突** | 检查pom.xml中的版本约束；使用dependency:tree分析 |
+| **Maven配置错误** | 读取pom.xml；与工作配置对比 |
+| **Lombok注解错误** | 检查是否安装Lombok插件；检查@Builder需要@AllArgsConstructor |
+| **Spring注入失败** | 检查@Component/@Service注解；检查构造器注入 |
+| **MyBatis映射错误** | 检查Mapper接口与XML是否匹配；检查namespace |
+| **Entity继承错误** | 检查是否继承BaseEntity；检查是否重复定义id字段 |
 
 ## Java Web特定检查
 
@@ -74,7 +89,7 @@
 
 ### 常见Maven命令
 
-```
+```bash
 # 清理并编译
 mvn clean compile
 

@@ -1,21 +1,19 @@
 ---
-description: 重述需求、评估风险并创建分步实现计划。在修改任何代码之前等待用户确认。
+name: plan
+description: >
+  重述需求、评估风险并创建分步实现计划。在修改任何代码之前等待用户确认。
+  触发条件：用户请求规划、需要设计方案、开始新功能开发。
+rules:
+  - rules/common/architecture.md
+  - rules/common/naming.md
 ---
 
-# Plan 命令
+# Plan Skill
 
-此命令调用 **planner** 代理，在编写任何代码之前创建全面的实现计划。
+此 skill 调用 **planner** 代理，在编写任何代码之前创建全面的实现计划。
 
-## 此命令的作用
+## 激活时机
 
-1. **重述需求** - 澄清需要构建什么
-2. **识别风险** - 揭示潜在问题和阻塞点
-3. **创建分步计划** - 将实现分解为多个阶段
-4. **等待确认** - 必须收到用户批准后才能继续
-
-## 何时使用
-
-在以下情况使用 `/plan`：
 - 开始新功能开发
 - 进行重大架构变更
 - 进行复杂重构
@@ -100,16 +98,13 @@ Agent (planner):
 - "different approach: [替代方案]"
 - "跳过阶段2，先做阶段3"
 
-## 与其他命令的集成
+## 与其他 skill 的集成
 
 规划完成后：
-- 使用 `/tdd` 通过测试驱动开发实现
-- 如遇构建错误使用 `/build-fix`
-- 完成实现后使用 `/code-review` 进行审查
+- 使用 `springboot-tdd` skill 通过测试驱动开发实现
+- 使用 `build-fix` skill 修复构建错误
+- 使用 `code-review` skill 进行审查
 
 ## 相关代理
 
-此命令调用 `planner` 代理。
-
-对于手动安装，源文件位于：
-`agents/planner.md`
+此 skill 调用 `planner` 代理（`agents/planner.md`）。
