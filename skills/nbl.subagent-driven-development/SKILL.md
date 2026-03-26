@@ -33,10 +33,10 @@ Execute plan by dispatching fresh subagent per task, with two-stage review after
 ### 1. Worktree Setup (MANDATORY)
 
 ```
-Before first task:
+Before each level:
 ├── Isolated workspace? → Call nbl.using-git-worktrees
-│   ├── Sequential mode → Single worktree
-│   └── Parallel mode → Batch worktrees (max 5)
+│   ├── Single task in level → Single worktree
+│   └── Multiple tasks in level → Batch worktrees (max 5)
 └── Verify: git worktree list shows your worktree(s)
 ```
 
@@ -104,9 +104,7 @@ digraph when_to_use {
 - Two-stage review after each task: spec compliance first, then code quality
 - Faster iteration (no human-in-loop between tasks)
 
-## Execution Mode
-
-After reading the plan, analyze task dependencies to determine execution mode.
+## Level-Based Execution
 
 ### Dependency Graph Analysis
 
@@ -123,38 +121,73 @@ def analyze_plan(plan):
     return levels
 ```
 
-### Level-Based Execution
+### Level Semantics
 
 ```
-Level 0 (parallel): Task 1, Task 3      # No dependencies
+Level 0: Task 1, Task 3      # No dependencies
         ↓
-Level 1 (parallel): Task 2, Task 4      # Depends on Level 0
+Level 1: Task 2, Task 4      # Depends on Level 0
         ↓
-Level 2: ...                            # Depends on Level 1
+Level 2: ...                  # Depends on Level 1
 ```
 
-**Rule:** All tasks in a level must complete before Level+1 starts.
+**Key insight:** Level describes **dependency constraints**, not execution mode.
+- All tasks in a level must complete before Level+1 starts (regardless of how many)
+- "Serial" = chain dependencies = many levels with 1 task each
+- "Parallel" = flat dependencies = few levels with many tasks each
 
-### Mode Selection
+### Unified Execution Pattern
+
+```
+For each level:
+    ├── Create worktree(s) for tasks in this level
+    ├── Execute tasks (mode depends on count)
+    │     ├── Single task → Simple mode (no pipeline overhead)
+    │     └── Multiple tasks → Pipeline mode (process as each completes)
+    ├── Wait all tasks in level complete
+    └── Proceed to next level
+```
+
+## Single-Task Execution
+
+When a level has exactly **one task**:
+
+### Execution Flow
 
 ```dot
-digraph mode_selection {
-    "Read plan" [shape=box];
-    "Build dependency graph" [shape=box];
-    "Current level has multiple tasks?" [shape=diamond];
-    "Sequential mode\n(existing flow)" [shape=box];
-    "Parallel mode\n(new flow)" [shape=box];
+digraph single_task_flow {
+    rankdir=TB;
 
-    "Read plan" -> "Build dependency graph";
-    "Build dependency graph" -> "Current level has multiple tasks?";
-    "Current level has multiple tasks?" -> "Sequential mode\n(existing flow)" [label="no"];
-    "Current level has multiple tasks?" -> "Parallel mode\n(new flow)" [label="yes"];
+    "Create worktree" [shape=box];
+    "Dispatch subagent" [shape=box];
+    "Subagent implements (TDD)" [shape=box];
+    "Stage 1: Spec Review" [shape=diamond];
+    "Fix spec issues" [shape=box];
+    "Stage 2: Code Quality Review" [shape=diamond];
+    "Fix quality issues" [shape=box];
+    "Rebase to base" [shape=box];
+    "Merge to base" [shape=box];
+    "Level complete" [shape=box];
+
+    "Create worktree" -> "Dispatch subagent";
+    "Dispatch subagent" -> "Subagent implements (TDD)";
+    "Subagent implements (TDD)" -> "Stage 1: Spec Review";
+    "Stage 1: Spec Review" -> "Fix spec issues" [label="issues found"];
+    "Fix spec issues" -> "Stage 1: Spec Review";
+    "Stage 1: Spec Review" -> "Stage 2: Code Quality Review" [label="passed"];
+    "Stage 2: Code Quality Review" -> "Fix quality issues" [label="issues found"];
+    "Fix quality issues" -> "Stage 2: Code Quality Review";
+    "Stage 2: Code Quality Review" -> "Rebase to base" [label="passed"];
+    "Rebase to base" -> "Merge to base";
+    "Merge to base" -> "Level complete";
 }
 ```
 
-## Parallel Execution Mode
+**No pipeline overhead:** Since only one task, no need to "wait for any completion" or check "more agents pending".
 
-When a level has multiple independent tasks:
+## Multi-Task Execution (Pipeline Optimization)
+
+When a level has **multiple independent tasks**, use pipeline mode for efficiency:
 
 ### Parallel Limit
 
@@ -162,10 +195,10 @@ When a level has multiple independent tasks:
 
 If level has more than 5 tasks, split into batches.
 
-### Execution Flow
+### Pipeline Flow
 
 ```dot
-digraph parallel_flow {
+digraph pipeline_flow {
     rankdir=TB;
 
     "Create worktrees (max 5)" [shape=box];
@@ -196,7 +229,9 @@ digraph parallel_flow {
 }
 ```
 
-### Rebase + Merge Process
+**Pipeline benefit:** As soon as any agent completes, start processing its review/merge without waiting for others.
+
+### Per-Task Rebase + Merge Process
 
 For each completed agent:
 
@@ -230,16 +265,23 @@ digraph process {
         label="Setup Phase (NON-NEGOTIABLE)";
         style=filled fillcolor=lightyellow;
         "Read plan, extract all tasks with full text, note context, create TodoWrite" [shape=box];
-        "Call nbl.using-git-worktrees" [shape=box style=filled fillcolor=lightpink];
-        "Sequential: single worktree OR Parallel: batch worktrees (max 5)" [shape=diamond];
+        "Analyze dependencies → Build levels" [shape=box];
     }
 
-    subgraph cluster_per_task {
-        label="Per Task (TDD Required)";
+    subgraph cluster_level_loop {
+        label="For Each Level (Sequential)";
+        style=filled fillcolor=lightyellow;
+        "Call nbl.using-git-worktrees for this level" [shape=box style=filled fillcolor=lightpink];
+        "Create worktree(s) for tasks in this level" [shape=box];
+    }
+
+    subgraph cluster_task_loop {
+        label="For Each Task in Level (Single or Pipeline)";
+        style=filled fillcolor=lightblue;
         "Dispatch implementer subagent (./implementer-prompt.md)" [shape=box];
         "Implementer subagent asks questions?" [shape=diamond];
         "Answer questions, provide context" [shape=box];
-        "Implementer: invoke nbl.test-driven-development, commits" [shape=box style=filled fillcolor=lightblue];
+        "Implementer: invoke nbl.test-driven-development, commits" [shape=box];
         "Implementer reports DONE?" [shape=diamond];
         "Get missing context, re-dispatch" [shape=box];
     }
@@ -253,12 +295,26 @@ digraph process {
         "Invoke nbl.requesting-code-review (code-quality)" [shape=box];
         "Code quality reviewer approves ✅?" [shape=diamond];
         "Implementer fixes quality issues" [shape=box];
-        "Mark task complete in TodoWrite" [shape=box];
+        "Rebase to base" [shape=box];
+        "Merge to base" [shape=box];
     }
 
-    "Read plan, extract all tasks with full text, note context, create TodoWrite" -> "Call nbl.using-git-worktrees";
-    "Call nbl.using-git-worktrees" -> "Sequential: single worktree OR Parallel: batch worktrees (max 5)";
-    "Sequential: single worktree OR Parallel: batch worktrees (max 5)" -> "Dispatch implementer subagent (./implementer-prompt.md)";
+    subgraph cluster_cleanup {
+        label="After Level Complete";
+        "Mark level tasks complete" [shape=box];
+        "More levels?" [shape=diamond];
+    }
+
+    subgraph cluster_finish {
+        label="All Levels Complete";
+        "Dispatch final code reviewer" [shape=box];
+        "Use nbl.finishing-a-development-branch" [shape=doublecircle style=filled fillcolor=lightgreen];
+    }
+
+    "Read plan, extract all tasks with full text, note context, create TodoWrite" -> "Analyze dependencies → Build levels";
+    "Analyze dependencies → Build levels" -> "Call nbl.using-git-worktrees for this level";
+    "Call nbl.using-git-worktrees for this level" -> "Create worktree(s) for tasks in this level";
+    "Create worktree(s) for tasks in this level" -> "Dispatch implementer subagent (./implementer-prompt.md)";
 
     "Dispatch implementer subagent (./implementer-prompt.md)" -> "Implementer subagent asks questions?";
     "Implementer subagent asks questions?" -> "Answer questions, provide context" [label="yes"];
@@ -275,14 +331,15 @@ digraph process {
     "Invoke nbl.requesting-code-review (code-quality)" -> "Code quality reviewer approves ✅?";
     "Code quality reviewer approves ✅?" -> "Implementer fixes quality issues" [label="no - issues found"];
     "Implementer fixes quality issues" -> "Invoke nbl.requesting-code-review (code-quality)" [label="re-review"];
-    "Code quality reviewer approves ✅?" -> "Mark task complete in TodoWrite" [label="yes"];
-    "Mark task complete in TodoWrite" -> "More tasks remain?";
-    "More tasks remain?" [shape=diamond];
-    "More tasks remain?" -> "Dispatch implementer subagent (./implementer-prompt.md)" [label="yes"];
-    "More tasks remain?" -> "Dispatch final code reviewer subagent for entire implementation" [label="no"];
-    "Dispatch final code reviewer subagent for entire implementation" [shape=box];
-    "Dispatch final code reviewer subagent for entire implementation" -> "Use nbl.finishing-a-development-branch";
-    "Use nbl.finishing-a-development-branch" [shape=doublecircle style=filled fillcolor=lightgreen];
+    "Code quality reviewer approves ✅?" -> "Rebase to base" [label="yes"];
+    "Rebase to base" -> "Merge to base";
+
+    "Merge to base" -> "Mark level tasks complete";
+    "Mark level tasks complete" -> "More levels?";
+
+    "More levels?" -> "Call nbl.using-git-worktrees for this level" [label="yes - next level"];
+    "More levels?" -> "Dispatch final code reviewer" [label="no"];
+    "Dispatch final code reviewer" -> "Use nbl.finishing-a-development-branch";
 }
 ```
 
@@ -290,7 +347,7 @@ digraph process {
 
 | Gate | Location | Requirement |
 |------|----------|-------------|
-| **GATE 1: Worktree** | Before first task | MUST call `nbl.using-git-worktrees` |
+| **GATE 1: Worktree** | Before each level | MUST call `nbl.using-git-worktrees` for tasks in current level |
 | **GATE 2: TDD** | Implementer phase | MUST invoke `nbl.test-driven-development` skill |
 | **GATE 3: Spec Review** | After implementer | MUST invoke `nbl.requesting-code-review` with spec-reviewer template |
 | **GATE 4: Quality Review** | After spec review | MUST invoke `nbl.requesting-code-review` with code-quality template |
@@ -461,7 +518,7 @@ Done!
 - Merge without rebasing first
 - Proceed to next level with failed agents
 - Ignore rebase conflicts
-- In sequential mode (single worktree): dispatch multiple implementation subagents in parallel (conflicts)
+- In single worktree mode: dispatch multiple implementation subagents in parallel (conflicts - one directory can't handle multiple parallel edits)
 
 **If subagent asks questions:**
 - Answer clearly and completely
@@ -481,10 +538,10 @@ Done!
 ## Integration
 
 **Required workflow skills:**
-- **nbl.using-git-worktrees** - REQUIRED: Set up isolated workspace before starting (single or batch mode)
+- **nbl.using-git-worktrees** - REQUIRED: Set up isolated worktrees before each level (single or batch mode)
 - **nbl.writing-plans** - Creates the plan this skill executes (with task dependencies)
 - **nbl.requesting-code-review** - Code review template for reviewer subagents
-- **nbl.finishing-a-development-branch** - Complete development after all tasks
+- **nbl.finishing-a-development-branch** - Complete development after all tasks are merged
 
 **Subagents should use:**
 - **nbl.test-driven-development** - Subagents follow TDD for each task
@@ -492,7 +549,9 @@ Done!
 **Alternative workflow:**
 - **nbl.executing-plans** - Use for parallel session instead of same-session execution
 
-**Parallel mode integration:**
-- Creates batch worktrees for parallel tasks (max 5)
+**Multi-task level integration:**
+- Creates batch worktrees for multiple parallel tasks (max 5)
+- Uses pipeline flow: process each task as it completes
 - Uses rebase + merge for each completed task
 - Main agent handles rebase conflicts
+- Single-task level uses simple mode with no pipeline overhead
