@@ -6,17 +6,17 @@
 
 ## 子代理使用
 
-通过 `/orchestrate` 入口统一调度，子代理按需创建：
+通过 `/nbl.orchestrate` 入口统一调度，子代理按需创建：
 
 | 场景 | 入口命令 | 子代理模式 |
 |------|---------|-----------|
-| 新功能开发 | `/orchestrate feature "描述"` | 子代理执行 |
-| Bug修复 | `/orchestrate bugfix "描述"` | 子代理执行 |
-| 代码重构 | `/orchestrate refactor "描述"` | 子代理执行 |
+| 新功能开发 | `/nbl.orchestrate feature "描述"` | 子代理执行 |
+| Bug修复 | `/nbl.orchestrate bugfix "描述"` | 子代理执行 |
+| 代码重构 | `/nbl.orchestrate refactor "描述"` | 子代理执行 |
 
 ## 并行任务执行
 
-对于独立操作，使用 `dispatching-parallel-agents` 并行执行：
+对于独立操作，使用 `nbl.dispatching-parallel-agents` 并行执行：
 
 ```
 # 好：并行执行
