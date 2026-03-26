@@ -23,63 +23,64 @@ Unified workflow orchestration entry point. All implementation happens in subage
 ## Complete Feature Workflow
 
 ```dot
-digraph orchestrate_feature_workflow {
+digraph orchestrate_feature_workflow_v2 {
     rankdir=TB;
     node [shape=box style=filled fillcolor=lightyellow];
 
-    "1. User starts /orchestrate feature\n[Main Window - Orchestration]" [shape=doublecircle fillcolor=lightblue];
+    "1. User starts /orchestrate feature" [shape=doublecircle fillcolor=lightblue];
 
-    "2. brainstorming skill\n[Main Window - Requirements Clarification]" [fillcolor=lightgreen];
+    "2. brainstorming skill\n[Main Window]" [fillcolor=lightgreen];
     "3. Output: docs/nbl/specs/\n<date>-<topic>-design.md" [shape=note fillcolor=lightgray];
+    "3b. Spec Review Loop\n(spec-document-reviewer)" [fillcolor=lightpink];
 
-    "4. Assess requirement size" [shape=diamond];
-    "4a. Large requirement\n(multi-subsystem/complex)" [fillcolor=lightyellow];
-    "4b. Small requirement\n(simple/quick)" [fillcolor=lightyellow];
+    "4. writing-plans skill\n(with task dependencies)" [fillcolor=lightgreen];
+    "5. Output: docs/nbl/plans/\n<date>-<feature>.md" [shape=note fillcolor=lightgray];
+    "5b. Plan Review Loop\n(plan-document-reviewer)" [fillcolor=lightpink];
 
-    "5a. writing-plans skill\n[Subagent - Generate detailed plan]" [fillcolor=lightpink];
-    "5a. Output: docs/nbl/plans/\n<date>-<feature>.md" [shape=note fillcolor=lightgray];
-    "5a. plan review loop\n(plan-document-reviewer)" [fillcolor=lightpink];
+    "6. Build dependency graph" [fillcolor=lightgreen];
+    "7. Identify parallel levels" [shape=diamond fillcolor=lightyellow];
 
-    "5b. plan skill\n[Current project - Lightweight plan]" [fillcolor=lightpink];
+    "8a. Sequential level\n(single task)" [fillcolor=lightyellow];
+    "8b. Parallel level\n(multiple tasks, max 5)" [fillcolor=lightyellow];
 
-    "6. using-git-worktrees\n[Subagent - Create isolated workspace]" [fillcolor=lightpink];
+    "9a. Single worktree\n(using-git-worktrees)" [fillcolor=lightpink];
+    "9b. Batch worktrees\n(using-git-worktrees)" [fillcolor=lightpink];
 
-    "7. Task execution mode" [shape=diamond];
-    "7a. Parallel tasks\n(dispatching-parallel-agents)" [fillcolor=lightpink];
-    "7b. Sequential tasks\n(Sequential execution)" [fillcolor=lightpink];
+    "10a. Sequential execution\n(subagent-driven-development)" [fillcolor=lightpink];
+    "10b. Parallel execution:\n- Dispatch agents (max 5)\n- Wait & process completions\n- CR → Rebase → Merge\n- Cleanup worktree" [fillcolor=lightpink];
 
-    "7c. subagent-driven-development\n[Subagent per task execution]" [fillcolor=lightpink];
-    "7c. Each task:\n- TDD (RED-GREEN-REFACTOR)\n- spec review\n- code quality review" [fillcolor=lightpink];
+    "11. More levels?" [shape=diamond fillcolor=lightyellow];
+    "12. requesting-code-review" [fillcolor=lightpink];
+    "13. finishing-a-development-branch" [fillcolor=lightpink];
+    "14. Return to main window" [shape=doublecircle fillcolor=lightblue];
 
-    "8. requesting-code-review\n[Subagent - Code Review]" [fillcolor=lightpink];
-    "8b. receiving-code-review\n[Handle CR feedback]" [fillcolor=lightpink];
+    "1. User starts /orchestrate feature" -> "2. brainstorming skill\n[Main Window]";
+    "2. brainstorming skill\n[Main Window]" -> "3. Output: docs/nbl/specs/\n<date>-<topic>-design.md";
+    "3. Output: docs/nbl/specs/\n<date>-<topic>-design.md" -> "3b. Spec Review Loop\n(spec-document-reviewer)";
+    "3b. Spec Review Loop\n(spec-document-reviewer)" -> "4. writing-plans skill\n(with task dependencies)" [label="approved"];
 
-    "9. finishing-a-development-branch\n[Complete branch]" [fillcolor=lightpink];
+    "4. writing-plans skill\n(with task dependencies)" -> "5. Output: docs/nbl/plans/\n<date>-<feature>.md";
+    "5. Output: docs/nbl/plans/\n<date>-<feature>.md" -> "5b. Plan Review Loop\n(plan-document-reviewer)";
+    "5b. Plan Review Loop\n(plan-document-reviewer)" -> "6. Build dependency graph" [label="approved"];
 
-    "10. Return to main window" [shape=doublecircle fillcolor=lightblue];
+    "6. Build dependency graph" -> "7. Identify parallel levels";
+    "7. Identify parallel levels" -> "8a. Sequential level\n(single task)" [label="single task"];
+    "7. Identify parallel levels" -> "8b. Parallel level\n(multiple tasks, max 5)" [label="multiple tasks"];
 
-    "1. User starts /orchestrate feature" -> "2. brainstorming skill";
-    "2. brainstorming skill" -> "3. Output: docs/nbl/specs/<date>-<topic>-design.md";
-    "3. Output: docs/nbl/specs/<date>-<topic>-design.md" -> "4. Assess requirement size";
-    "4. Assess requirement size" -> "4a. Large requirement" [label="Large"];
-    "4. Assess requirement size" -> "4b. Small requirement" [label="Small"];
-    "4a. Large requirement" -> "5a. writing-plans skill";
-    "4b. Small requirement" -> "5b. plan skill";
-    "5a. writing-plans skill" -> "5a. Output: docs/nbl/plans/<date>-<feature>.md";
-    "5a. Output: docs/nbl/plans/<date>-<feature>.md" -> "5a. plan review loop";
-    "5a. plan review loop" -> "6. using-git-worktrees";
-    "5b. plan skill" -> "6. using-git-worktrees";
-    "6. using-git-worktrees" -> "7. Task execution mode";
-    "7. Task execution mode" -> "7a. Parallel tasks" [label="Parallel"];
-    "7. Task execution mode" -> "7b. Sequential tasks" [label="Sequential"];
-    "7. Task execution mode" -> "7c. subagent-driven-development" [label="Subagent-driven"];
-    "7a. Parallel tasks" -> "7c. subagent-driven-development";
-    "7b. Sequential tasks" -> "7c. subagent-driven-development";
-    "7c. subagent-driven-development" -> "8. requesting-code-review";
-    "8. requesting-code-review" -> "8b. receiving-code-review";
-    "8b. receiving-code-review" -> "9. finishing-a-development-branch" [label="CR Passed"];
-    "8b. receiving-code-review" -> "7c. subagent-driven-development" [label="CR Issues → Fix"];
-    "9. finishing-a-development-branch" -> "10. Return to main window";
+    "8a. Sequential level\n(single task)" -> "9a. Single worktree\n(using-git-worktrees)";
+    "9a. Single worktree\n(using-git-worktrees)" -> "10a. Sequential execution\n(subagent-driven-development)";
+
+    "8b. Parallel level\n(multiple tasks, max 5)" -> "9b. Batch worktrees\n(using-git-worktrees)";
+    "9b. Batch worktrees\n(using-git-worktrees)" -> "10b. Parallel execution:\n- Dispatch agents (max 5)\n- Wait & process completions\n- CR → Rebase → Merge\n- Cleanup worktree";
+
+    "10a. Sequential execution\n(subagent-driven-development)" -> "11. More levels?";
+    "10b. Parallel execution:\n- Dispatch agents (max 5)\n- Wait & process completions\n- CR → Rebase → Merge\n- Cleanup worktree" -> "11. More levels?";
+
+    "11. More levels?" -> "7. Identify parallel levels" [label="yes"];
+    "11. More levels?" -> "12. requesting-code-review" [label="no"];
+
+    "12. requesting-code-review" -> "13. finishing-a-development-branch";
+    "13. finishing-a-development-branch" -> "14. Return to main window";
 }
 ```
 
@@ -148,12 +149,12 @@ digraph orchestrate_refactor_workflow {
 |-------|-----------|---------|
 | **orchestrate** | Main window | Unified entry point |
 | **brainstorming** | Main window | Requirements clarification |
-| **writing-plans** | Subagent | Detailed plan for large requirements |
+| **writing-plans** | Subagent | Detailed plan with task dependencies |
 | **plan** | Subagent | Lightweight plan for small requirements |
-| **using-git-worktrees** | Subagent | Isolated workspace setup |
-| **subagent-driven-development** | Subagent | Per-task execution |
+| **using-git-worktrees** | Subagent | Isolated workspace (single or batch mode) |
+| **subagent-driven-development** | Subagent | Task execution (sequential or parallel, max 5) |
 | **test-driven-development** | Subagent | TDD cycle |
-| **dispatching-parallel-agents** | Subagent | Parallel task execution |
+| **dispatching-parallel-agents** | Subagent | Parallel task execution (deprecated, use subagent-driven-development) |
 | **requesting-code-review** | Subagent | Code review |
 | **receiving-code-review** | Subagent | Handle CR feedback |
 | **finishing-a-development-branch** | Subagent | Complete branch |
@@ -174,10 +175,22 @@ digraph orchestrate_refactor_workflow {
 Is this a creative/implementation task?
   └── YES → Use brainstorming first (main window)
        └── After brainstorming:
-            ├── Large requirement? → writing-plans (subagent, file output)
-            └── Small requirement? → plan (subagent, in-memory)
+            ├── Large requirement? → writing-plans (with task dependencies)
+            └── Small requirement? → plan (in-memory)
+       └── After plan:
+            ├── Build dependency graph from task dependencies
+            ├── Identify parallel levels
+            └── For each level:
+                 ├── Single task? → Sequential execution (single worktree)
+                 └── Multiple tasks? → Parallel execution (max 5 worktrees)
   └── NO (simple/known) → Skip brainstorming
        └── Direct to appropriate workflow
+
+Parallel execution (max 5 agents):
+  ├── Create batch worktrees
+  ├── Dispatch agents simultaneously
+  ├── Process completions: CR → Rebase → Merge → Cleanup
+  └── Handle conflicts at rebase time
 ```
 
 ## Subagent Templates
