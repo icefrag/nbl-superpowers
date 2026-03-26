@@ -120,8 +120,12 @@ digraph brainstorming {
 After writing the spec document:
 
 1. Invoke `nbl:spec-document-reviewer` agent with spec file path
-2. If Issues Found: fix, re-invoke, repeat until Approved
+2. Review output:
+   - **✅ Approved** (0 Blockers) → proceed to user review
+   - **⚠️ Issues Found** (1+ Blockers) → fix blockers, re-invoke
 3. If loop exceeds 3 iterations, surface to human for guidance
+
+**Note:** Only 🔴 Blocker-level issues block approval. 🟡 Critical and 🟢 Suggestion are advisory.
 
 **User Review Gate:**
 After the spec review loop passes, ask the user to review the written spec before proceeding:
