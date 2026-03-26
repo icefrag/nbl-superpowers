@@ -446,9 +446,7 @@ Done!
 ## Red Flags
 
 **Never:**
-- Start implementation on main/master branch without explicit user consent
-- You are on main/master branch and have NOT called `nbl.using-git-worktrees`
-- You dispatched an implementer WITHOUT worktree isolation
+- Dispatch an implementer without worktree isolation (MUST call `nbl.using-git-worktrees` first, always required regardless of current branch)
 - Skip reviews (spec compliance OR code quality)
 - Proceed with unfixed issues
 - Make subagent read plan file (provide full text instead)
