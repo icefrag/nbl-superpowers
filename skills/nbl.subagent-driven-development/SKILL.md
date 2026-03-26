@@ -11,6 +11,60 @@ Execute plan by dispatching fresh subagent per task, with two-stage review after
 
 **Core principle:** Fresh subagent per task + two-stage review (spec then quality) = high quality, fast iteration
 
+## NON-NEGOTIABLE Requirements (Read BEFORE Starting)
+
+**You MUST complete these checks before dispatching ANY implementer subagent:**
+
+<NON_NEGOTIABLE>
+
+### 1. Worktree Setup (MANDATORY)
+
+```
+Before first task:
+├── Isolated workspace? → Call nbl.using-git-worktrees
+│   ├── Sequential mode → Single worktree
+│   └── Parallel mode → Batch worktrees (max 5)
+└── Verify: git worktree list shows your worktree(s)
+```
+
+**Never:** Dispatch implementer on main/master branch without worktree isolation
+
+### 2. TDD Required (MANDATORY)
+
+```
+Every implementation task MUST:
+├── Invoke nbl.test-driven-development skill FIRST
+├── Skill guides RED→GREEN→REFACTOR cycle
+└── Never write implementation before tests
+```
+
+**Never:** Skip TDD skill, write implementation before tests
+
+### 3. Two-Stage Review (MANDATORY)
+
+```
+After implementer completes:
+├── Stage 1: Spec compliance review
+│   ├── Invoke nbl.requesting-code-review skill
+│   ├── Use spec-reviewer-prompt.md template
+│   ├── ❌ Issues? → Implementer fixes → Re-review
+│   └── ✅ Pass → Proceed to Stage 2
+├── Stage 2: Code quality review
+│   ├── Invoke nbl.requesting-code-review skill
+│   ├── Use code-quality-reviewer-prompt.md template
+│   ├── ❌ Issues? → Implementer fixes → Re-review
+│   └── ✅ Pass → Task complete
+└── Never skip either stage
+```
+
+**Never:**
+- Let implementer self-review replace actual review
+- Skip spec compliance review
+- Skip code quality review
+- Proceed to next task with open review issues
+
+</NON_NEGOTIABLE>
+
 ## When to Use
 
 ```dot
@@ -146,52 +200,80 @@ For each completed agent:
 
 **Rule:** One agent failure does not block other parallel agents from executing, but blocks subsequent merges.
 
-## The Process
+## The Process (WITH NON-NEGOTIABLE GATES)
 
 ```dot
 digraph process {
     rankdir=TB;
 
+    subgraph cluster_setup {
+        label="Setup Phase (NON-NEGOTIABLE)";
+        style=filled fillcolor=lightyellow;
+        "Read plan, extract all tasks with full text, note context, create TodoWrite" [shape=box];
+        "Call nbl.using-git-worktrees" [shape=box style=filled fillcolor=lightpink];
+        "Sequential: single worktree OR Parallel: batch worktrees (max 5)" [shape=diamond];
+    }
+
     subgraph cluster_per_task {
-        label="Per Task";
+        label="Per Task (TDD Required)";
         "Dispatch implementer subagent (./implementer-prompt.md)" [shape=box];
         "Implementer subagent asks questions?" [shape=diamond];
         "Answer questions, provide context" [shape=box];
-        "Implementer subagent implements, tests, commits, self-reviews" [shape=box];
-        "Dispatch spec reviewer subagent (./spec-reviewer-prompt.md)" [shape=box];
-        "Spec reviewer subagent confirms code matches spec?" [shape=diamond];
-        "Implementer subagent fixes spec gaps" [shape=box];
-        "Dispatch code quality reviewer subagent (./code-quality-reviewer-prompt.md)" [shape=box];
-        "Code quality reviewer subagent approves?" [shape=diamond];
-        "Implementer subagent fixes quality issues" [shape=box];
+        "Implementer: invoke nbl.test-driven-development, commits" [shape=box style=filled fillcolor=lightblue];
+        "Implementer reports DONE?" [shape=diamond];
+        "Get missing context, re-dispatch" [shape=box];
+    }
+
+    subgraph cluster_review {
+        label="Two-Stage Review (NON-NEGOTIABLE)";
+        style=filled fillcolor=lightgreen;
+        "Invoke nbl.requesting-code-review (spec-reviewer)" [shape=box];
+        "Spec reviewer confirms ✅?" [shape=diamond];
+        "Implementer fixes spec gaps" [shape=box];
+        "Invoke nbl.requesting-code-review (code-quality)" [shape=box];
+        "Code quality reviewer approves ✅?" [shape=diamond];
+        "Implementer fixes quality issues" [shape=box];
         "Mark task complete in TodoWrite" [shape=box];
     }
 
-    "Read plan, extract all tasks with full text, note context, create TodoWrite" [shape=box];
-    "More tasks remain?" [shape=diamond];
-    "Dispatch final code reviewer subagent for entire implementation" [shape=box];
-    "Use nbl.finishing-a-development-branch" [shape=box style=filled fillcolor=lightgreen];
+    "Read plan, extract all tasks with full text, note context, create TodoWrite" -> "Call nbl.using-git-worktrees";
+    "Call nbl.using-git-worktrees" -> "Sequential: single worktree OR Parallel: batch worktrees (max 5)";
+    "Sequential: single worktree OR Parallel: batch worktrees (max 5)" -> "Dispatch implementer subagent (./implementer-prompt.md)";
 
-    "Read plan, extract all tasks with full text, note context, create TodoWrite" -> "Dispatch implementer subagent (./implementer-prompt.md)";
     "Dispatch implementer subagent (./implementer-prompt.md)" -> "Implementer subagent asks questions?";
     "Implementer subagent asks questions?" -> "Answer questions, provide context" [label="yes"];
     "Answer questions, provide context" -> "Dispatch implementer subagent (./implementer-prompt.md)";
-    "Implementer subagent asks questions?" -> "Implementer subagent implements, tests, commits, self-reviews" [label="no"];
-    "Implementer subagent implements, tests, commits, self-reviews" -> "Dispatch spec reviewer subagent (./spec-reviewer-prompt.md)";
-    "Dispatch spec reviewer subagent (./spec-reviewer-prompt.md)" -> "Spec reviewer subagent confirms code matches spec?";
-    "Spec reviewer subagent confirms code matches spec?" -> "Implementer subagent fixes spec gaps" [label="no"];
-    "Implementer subagent fixes spec gaps" -> "Dispatch spec reviewer subagent (./spec-reviewer-prompt.md)" [label="re-review"];
-    "Spec reviewer subagent confirms code matches spec?" -> "Dispatch code quality reviewer subagent (./code-quality-reviewer-prompt.md)" [label="yes"];
-    "Dispatch code quality reviewer subagent (./code-quality-reviewer-prompt.md)" -> "Code quality reviewer subagent approves?";
-    "Code quality reviewer subagent approves?" -> "Implementer subagent fixes quality issues" [label="no"];
-    "Implementer subagent fixes quality issues" -> "Dispatch code quality reviewer subagent (./code-quality-reviewer-prompt.md)" [label="re-review"];
-    "Code quality reviewer subagent approves?" -> "Mark task complete in TodoWrite" [label="yes"];
+    "Implementer subagent asks questions?" -> "Implementer: invoke nbl.test-driven-development, commits" [label="no"];
+    "Implementer: invoke nbl.test-driven-development, commits" -> "Implementer reports DONE?";
+    "Implementer reports DONE?" -> "Get missing context, re-dispatch" [label="no - BLOCKED/NEEDS_CONTEXT"];
+    "Implementer reports DONE?" -> "Invoke nbl.requesting-code-review (spec-reviewer)" [label="yes"];
+
+    "Invoke nbl.requesting-code-review (spec-reviewer)" -> "Spec reviewer confirms ✅?";
+    "Spec reviewer confirms ✅?" -> "Implementer fixes spec gaps" [label="no - issues found"];
+    "Implementer fixes spec gaps" -> "Invoke nbl.requesting-code-review (spec-reviewer)" [label="re-review"];
+    "Spec reviewer confirms ✅?" -> "Invoke nbl.requesting-code-review (code-quality)" [label="yes"];
+    "Invoke nbl.requesting-code-review (code-quality)" -> "Code quality reviewer approves ✅?";
+    "Code quality reviewer approves ✅?" -> "Implementer fixes quality issues" [label="no - issues found"];
+    "Implementer fixes quality issues" -> "Invoke nbl.requesting-code-review (code-quality)" [label="re-review"];
+    "Code quality reviewer approves ✅?" -> "Mark task complete in TodoWrite" [label="yes"];
     "Mark task complete in TodoWrite" -> "More tasks remain?";
+    "More tasks remain?" [shape=diamond];
     "More tasks remain?" -> "Dispatch implementer subagent (./implementer-prompt.md)" [label="yes"];
     "More tasks remain?" -> "Dispatch final code reviewer subagent for entire implementation" [label="no"];
+    "Dispatch final code reviewer subagent for entire implementation" [shape=box];
     "Dispatch final code reviewer subagent for entire implementation" -> "Use nbl.finishing-a-development-branch";
+    "Use nbl.finishing-a-development-branch" [shape=doublecircle style=filled fillcolor=lightgreen];
 }
 ```
+
+### Process Gates Summary
+
+| Gate | Location | Requirement |
+|------|----------|-------------|
+| **GATE 1: Worktree** | Before first task | MUST call `nbl.using-git-worktrees` |
+| **GATE 2: TDD** | Implementer phase | MUST invoke `nbl.test-driven-development` skill |
+| **GATE 3: Spec Review** | After implementer | MUST invoke `nbl.requesting-code-review` with spec-reviewer template |
+| **GATE 4: Quality Review** | After spec review | MUST invoke `nbl.requesting-code-review` with code-quality template |
 
 ## Model Selection
 

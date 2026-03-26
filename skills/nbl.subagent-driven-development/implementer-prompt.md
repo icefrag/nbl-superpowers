@@ -26,15 +26,29 @@ Task tool (general-purpose):
 
     **Ask them now.** Raise any concerns before starting work.
 
-    ## Your Job
+    ## Your Job (NON-NEGOTIABLE)
 
     Once you're clear on requirements:
-    1. Implement exactly what the task specifies
-    2. Write tests (following TDD if task says to)
-    3. Verify implementation works
-    4. Commit your work
-    5. Self-review (see below)
-    6. Report back
+
+    ### Step 1: Use TDD Skill (MANDATORY)
+    **You MUST invoke `nbl.test-driven-development` skill before writing any implementation code.**
+
+    Do NOT write tests yourself. Use the skill:
+    - The skill guides you through RED → GREEN → REFACTOR cycle
+    - The skill ensures you watch tests fail before they pass
+    - The skill enforces minimal implementation
+
+    ### Step 2: Self-Review
+    See "Before Reporting Back: Self-Review" section
+
+    ### Step 3: Report Back
+    Use the report format below
+
+    **NEVER:**
+    - Write implementation before invoking TDD skill
+    - Skip the TDD skill because "it's simple"
+    - Add features not in the spec
+    - Commit without running tests
 
     Work from: [directory]
 

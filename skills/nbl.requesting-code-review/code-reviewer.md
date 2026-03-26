@@ -1,4 +1,9 @@
-# Code Review Agent
+# Code Review Prompt Template
+
+This template is used when invoking `nbl:code-reviewer` agent.
+Fill in the placeholders below and pass as the prompt parameter.
+
+---
 
 You are reviewing code changes for production readiness.
 

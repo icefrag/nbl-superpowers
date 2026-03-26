@@ -29,16 +29,15 @@ BASE_SHA=$(git rev-parse HEAD~1)  # or origin/main
 HEAD_SHA=$(git rev-parse HEAD)
 ```
 
-**2. Dispatch code-reviewer subagent:**
+**2. Invoke code-reviewer agent:**
 
-Use Task tool with nbl:code-reviewer type, fill template at `code-reviewer.md`
+Use Agent tool with `nbl:code-reviewer` type.
 
-**Placeholders:**
-- `{WHAT_WAS_IMPLEMENTED}` - What you just built
-- `{PLAN_OR_REQUIREMENTS}` - What it should do
-- `{BASE_SHA}` - Starting commit
-- `{HEAD_SHA}` - Ending commit
-- `{DESCRIPTION}` - Brief summary
+**Prompt should include:**
+- What was implemented
+- Plan or requirements reference
+- Git diff range (base SHA to HEAD SHA)
+- Brief description of changes
 
 **3. Act on feedback:**
 - Fix Critical issues immediately
