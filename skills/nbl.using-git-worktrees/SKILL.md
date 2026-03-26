@@ -54,13 +54,7 @@ No .gitignore verification needed - outside project entirely.
 
 ## Creation Steps
 
-### 1. Detect Project Name
-
-```bash
-project=$(basename "$(git rev-parse --show-toplevel)")
-```
-
-### 2. Create Worktree
+### 1. Create Worktree
 
 ```bash
 # Full path
@@ -71,7 +65,7 @@ git worktree add "$path" -b "$BRANCH_NAME"
 cd "$path"
 ```
 
-### 3. Run Project Setup
+### 2. Run Project Setup
 
 Auto-detect and run appropriate setup:
 
@@ -90,7 +84,7 @@ if [ -f pyproject.toml ]; then poetry install; fi
 if [ -f go.mod ]; then go mod download; fi
 ```
 
-### 4. Verify Clean Baseline
+### 3. Verify Clean Baseline
 
 Run tests to ensure worktree starts clean:
 
@@ -106,7 +100,7 @@ go test ./...
 
 **If tests pass:** Report ready.
 
-### 5. Report Location
+### 4. Report Location
 
 ```
 Worktree ready at <full-path>
