@@ -31,11 +31,9 @@ digraph orchestrate_feature_workflow_v2 {
 
     "2. brainstorming skill\n[Main Window]" [fillcolor=lightgreen];
     "3. Output: docs/nbl/specs/\n<date>-<topic>-design.md" [shape=note fillcolor=lightgray];
-    "3b. Spec Review Loop\n(spec-document-reviewer)" [fillcolor=lightpink];
 
     "4. writing-plans skill\n(with task dependencies)" [fillcolor=lightgreen];
     "5. Output: docs/nbl/plans/\n<date>-<feature>.md" [shape=note fillcolor=lightgray];
-    "5b. Plan Review Loop\n(plan-document-reviewer)" [fillcolor=lightpink];
 
     "6. Build dependency graph" [fillcolor=lightgreen];
     "7. Identify parallel levels" [shape=diamond fillcolor=lightyellow];
@@ -56,12 +54,10 @@ digraph orchestrate_feature_workflow_v2 {
 
     "1. User starts /orchestrate feature" -> "2. brainstorming skill\n[Main Window]";
     "2. brainstorming skill\n[Main Window]" -> "3. Output: docs/nbl/specs/\n<date>-<topic>-design.md";
-    "3. Output: docs/nbl/specs/\n<date>-<topic>-design.md" -> "3b. Spec Review Loop\n(spec-document-reviewer)";
-    "3b. Spec Review Loop\n(spec-document-reviewer)" -> "4. writing-plans skill\n(with task dependencies)" [label="approved"];
+    "3. Output: docs/nbl/specs/\n<date>-<topic>-design.md" -> "4. writing-plans skill\n(with task dependencies)";
 
     "4. writing-plans skill\n(with task dependencies)" -> "5. Output: docs/nbl/plans/\n<date>-<feature>.md";
-    "5. Output: docs/nbl/plans/\n<date>-<feature>.md" -> "5b. Plan Review Loop\n(plan-document-reviewer)";
-    "5b. Plan Review Loop\n(plan-document-reviewer)" -> "6. Build dependency graph" [label="approved"];
+    "5. Output: docs/nbl/plans/\n<date>-<feature>.md" -> "6. Build dependency graph";
 
     "6. Build dependency graph" -> "7. Identify parallel levels";
     "7. Identify parallel levels" -> "8a. Sequential level\n(single task)" [label="single task"];

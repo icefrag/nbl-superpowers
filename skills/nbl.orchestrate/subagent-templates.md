@@ -12,10 +12,6 @@ See `../nbl.subagent-driven-development/spec-reviewer-prompt.md` for full templa
 
 See `../nbl.subagent-driven-development/code-quality-reviewer-prompt.md` for full template.
 
-## Plan Document Reviewer Template
-
-See `../nbl.writing-plans/plan-document-reviewer-prompt.md` for full template.
-
 ## Dispatch Pattern
 
 ```bash

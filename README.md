@@ -16,7 +16,7 @@
 |------|------|------|
 | Skills | 18+ | 覆盖完整开发生命周期的技能 |
 | Rules | 12 | 编码规范、架构规范、命名规范等 |
-| Agents | 2 | 独立代理（代码审查、规格审查） |
+| Agents | 1 | 代码审查代理 |
 
 ---
 
@@ -46,8 +46,7 @@
 |-------|------|------|
 | **nbl.orchestrate** | 统一工作流入口点 | 入口 |
 | **nbl.brainstorming** | 需求澄清和规格文档 | 需求 |
-| **nbl.writing-plans** | 大需求详细计划 | 规划 |
-| **nbl.plan** | 小需求轻量计划 | 规划 |
+| **nbl.writing-plans** | 详细计划 | 规划 |
 | **nbl.using-git-worktrees** | 隔离工作区 | 准备 |
 | **nbl.subagent-driven-development** | 子代理执行任务 | 执行 |
 | **nbl.test-driven-development** | TDD开发 | 执行 |
@@ -81,7 +80,6 @@
 | Agent | 描述 | 调用方式 |
 |-------|------|---------|
 | **nbl:code-reviewer** | 代码审查，检查实现是否符合计划和规范 | Agent tool |
-| **nbl:spec-document-reviewer** | 规格文档审查，检查完整性和一致性 | Agent tool |
 
 ## 工作流
 
@@ -93,11 +91,12 @@
 nbl.brainstorming
     ├── 需求澄清
     ├── 输出 Spec (docs/nbl/specs/)
-    ├── nbl:spec-document-reviewer 审查 Spec
+    ├── 内审 Spec
     └── 用户确认 Spec
     ↓
-nbl.writing-plans / nbl.plan
+nbl.writing-plans
     ├── 输出 Plan (docs/nbl/plans/)
+    ├── 内审 Plan
     └── 用户确认 Plan
     ↓
 nbl.subagent-driven-development
@@ -121,14 +120,12 @@ nbl.finishing-a-development-branch
 
 ```
 agents/
-├── code-reviewer.md          # 代码审查 agent
-└── spec-document-reviewer.md # 规格文档审查 agent
+└── code-reviewer.md          # 代码审查 agent
 
 skills/
 ├── nbl.orchestrate/                 # 统一工作流入口
 ├── nbl.brainstorming/              # 需求澄清
 ├── nbl.writing-plans/              # 详细计划
-├── nbl.plan/                       # 轻量计划
 ├── nbl.using-git-worktrees/        # 隔离工作区
 ├── nbl.subagent-driven-development/# 子代理执行 (含 4 个 NON-NEGOTIABLE gates)
 ├── nbl.test-driven-development/    # TDD

@@ -32,8 +32,7 @@
 |-------|------|------|
 | **nbl.orchestrate** | 统一工作流入口点 | 入口 |
 | **nbl.brainstorming** | 需求澄清和规格文档 | 需求 |
-| **nbl.writing-plans** | 大需求详细计划 | 规划 |
-| **nbl.plan** | 小需求轻量计划 | 规划 |
+| **nbl.writing-plans** | 详细计划 | 规划 |
 | **nbl.using-git-worktrees** | 隔离工作区 | 准备 |
 | **nbl.subagent-driven-development** | 子代理执行任务 | 执行 |
 | **nbl.test-driven-development** | TDD开发 | 执行 |
@@ -65,7 +64,7 @@
 ## 工作流
 
 ```
-/nbl.orchestrate feature "描述"  →  nbl.brainstorming → nbl.writing-plans/nbl.plan →
+/nbl.orchestrate feature "描述"  →  nbl.brainstorming → nbl.writing-plans →
                                           nbl.subagent-driven-development → code-review → finish
 
 /nbl.orchestrate bugfix "描述"   →  TDD修复 → code-review → commit
@@ -80,7 +79,6 @@ skills/
 ├── nbl.orchestrate/                 # 统一工作流入口
 ├── nbl.brainstorming/              # 需求澄清
 ├── nbl.writing-plans/              # 详细计划
-├── nbl.plan/                       # 轻量计划
 ├── nbl.using-git-worktrees/        # 隔离工作区
 ├── nbl.subagent-driven-development/# 子代理执行
 ├── nbl.test-driven-development/    # TDD
@@ -129,3 +127,14 @@ skills/
 |---------|------|------|
 | ✅ 项目规则 | `rules/common/xxx.md` | 本项目专用规则 |
 | ❌ 全局规则 | `~/.claude/rules/common/xxx.md` | 所有项目共享规则 |
+
+### Skill 命名规范
+
+本项目所有 skill 都必须使用 **`nbl.` 前缀**，保持命名一致性：
+
+| 命名方式 | 示例 | 是否允许 |
+|---------|------|---------|
+| ✅ 正确 | `nbl.executing-plans`, `nbl.brainstorming` | 允许 |
+| ❌ 错误 | `executing-plans`, `superpowers:executing-plans` | 禁止 |
+
+所有 skill 内部引用其他 skill 时，也必须使用 `nbl.xxx` 格式，不能使用 `superpowers:xxx` 格式。

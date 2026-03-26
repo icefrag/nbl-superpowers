@@ -24,8 +24,7 @@
    - 小需求跳过此步骤
 
 3. **规划**
-   - 大需求: 使用 **nbl.writing-plans** skill 生成详细计划
-   - 小需求: 使用 **nbl.plan** skill 生成轻量计划
+   - 使用 **nbl.writing-plans** skill 生成详细计划（内审模式，性能大幅提升，所有大小需求都用它）
 
 4. **TDD实现** (子代理执行)
    - 使用 **nbl.test-driven-development** skill
