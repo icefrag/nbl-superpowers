@@ -1,165 +1,199 @@
 ---
 name: orchestrate
 description: >
-  多代理工作流的顺序和 tmux/worktree 编排指南。
-  触发条件：复杂多步骤任务、需要多代理协作、用户请求编排。
+  Unified workflow orchestration entry point for all development work (feature, bugfix, refactor).
+  This is the ONLY entry point for development workflows. All implementation happens in subagents.
+  Trigger: User starts any development work, complex tasks, multi-agent coordination.
 ---
 
 # Orchestrate Skill
 
-用于复杂任务的顺序 agent 工作流。
+Unified workflow orchestration entry point. All implementation happens in subagents. Main window handles orchestration and user interaction only.
 
-## 激活时机
+**Core principle:** One entry point, all execution in subagents.
 
-- 复杂多步骤任务
-- 需要多代理协作
-- 用户请求编排
-
-## 使用方法
-
-`/orchestrate [工作流类型] [任务描述]`
-
-## 工作流类型
-
-### feature
-完整功能实现工作流：
-```
-planner -> tdd-guide -> code-reviewer
-```
-
-### bugfix
-Bug 调查和修复工作流：
-```
-planner -> tdd-guide -> code-reviewer
-```
-
-### refactor
-安全重构工作流：
-```
-architect -> code-reviewer -> tdd-guide
-```
-
-## 执行模式
-
-对于工作流中的每个代理：
-
-1. **调用代理**，传入前一代理的上下文
-2. **收集输出**为结构化交接文档
-3. **传递给下一个代理**
-4. **汇总结果**到最终报告
-
-## 交接文档格式
-
-代理之间创建交接文档：
-
-```markdown
-## HANDOFF: [前一代理] -> [下一代理]
-
-### 上下文
-[已完成工作的摘要]
-
-### 发现
-[关键发现或决策]
-
-### 已修改文件
-[涉及的文件列表]
-
-### 待解决问题
-[留给下一代理的未决项]
-
-### 建议
-[建议的后续步骤]
-```
-
-## 示例：功能工作流
+## Entry Points
 
 ```
-/orchestrate feature "添加用户认证"
+/orchestrate feature "<description>"  - Feature development workflow
+/orchestrate bugfix "<description>"   - Bug fix workflow
+/orchestrate refactor "<description>" - Refactoring workflow
 ```
 
-执行流程：
+## Complete Feature Workflow
 
-1. **Planner 代理**
-   - 分析需求
-   - 创建实现计划
-   - 识别依赖
-   - 输出：`HANDOFF: planner -> tdd-guide`
+```dot
+digraph orchestrate_feature_workflow {
+    rankdir=TB;
+    node [shape=box style=filled fillcolor=lightyellow];
 
-2. **TDD Guide 代理**
-   - 读取 planner 交接文档
-   - 先编写测试
-   - 实现以通过测试
-   - 输出：`HANDOFF: tdd-guide -> code-reviewer`
+    "1. User starts /orchestrate feature\n[Main Window - Orchestration]" [shape=doublecircle fillcolor=lightblue];
 
-3. **Code Reviewer 代理**
-   - 审查实现
-   - 检查问题
-   - 提出改进建议
-   - 输出：最终报告
+    "2. brainstorming skill\n[Main Window - Requirements Clarification]" [fillcolor=lightgreen];
+    "3. Output: docs/superpowers/specs/\n<date>-<topic>-design.md" [shape=note fillcolor=lightgray];
 
-## 最终报告格式
+    "4. Assess requirement size" [shape=diamond];
+    "4a. Large requirement\n(multi-subsystem/complex)" [fillcolor=lightyellow];
+    "4b. Small requirement\n(simple/quick)" [fillcolor=lightyellow];
 
-```
-ORCHESTRATION REPORT
-====================
-Workflow: feature
-Task: 添加用户认证
-Agents: planner -> tdd-guide -> code-reviewer
+    "5a. writing-plans skill\n[Subagent - Generate detailed plan]" [fillcolor=lightpink];
+    "5a. Output: docs/superpowers/plans/\n<date>-<feature>.md" [shape=note fillcolor=lightgray];
+    "5a. plan review loop\n(plan-document-reviewer)" [fillcolor=lightpink];
 
-SUMMARY
--------
-[一段话摘要]
+    "5b. plan skill\n[Current project - Lightweight plan]" [fillcolor=lightpink];
 
-AGENT OUTPUTS
--------------
-Planner: [摘要]
-TDD Guide: [摘要]
-Code Reviewer: [摘要]
+    "6. using-git-worktrees\n[Subagent - Create isolated workspace]" [fillcolor=lightpink];
 
-FILES CHANGED
--------------
-[所有已修改文件列表]
+    "7. Task execution mode" [shape=diamond];
+    "7a. Parallel tasks\n(dispatching-parallel-agents)" [fillcolor=lightpink];
+    "7b. Sequential tasks\n(Sequential execution)" [fillcolor=lightpink];
 
-TEST RESULTS
-------------
-[测试通过/失败摘要]
+    "7c. subagent-driven-development\n[Subagent per task execution]" [fillcolor=lightpink];
+    "7c. Each task:\n- TDD (RED-GREEN-REFACTOR)\n- spec review\n- code quality review" [fillcolor=lightpink];
 
-RECOMMENDATION
---------------
-[可发布 / 需要修改 / 阻塞]
-```
+    "8. requesting-code-review\n[Subagent - Code Review]" [fillcolor=lightpink];
+    "8b. receiving-code-review\n[Handle CR feedback]" [fillcolor=lightpink];
 
-## 并行执行
+    "9. finishing-a-development-branch\n[Complete branch]" [fillcolor=lightpink];
 
-对于独立检查，可并行运行代理：
+    "10. Return to main window" [shape=doublecircle fillcolor=lightblue];
 
-```markdown
-### 并行阶段
-同时运行：
-- code-reviewer（质量）
-- architect（设计）
-
-### 合并结果
-将输出合并为单一报告
+    "1. User starts /orchestrate feature" -> "2. brainstorming skill";
+    "2. brainstorming skill" -> "3. Output: docs/superpowers/specs/<date>-<topic>-design.md";
+    "3. Output: docs/superpowers/specs/<date>-<topic>-design.md" -> "4. Assess requirement size";
+    "4. Assess requirement size" -> "4a. Large requirement" [label="Large"];
+    "4. Assess requirement size" -> "4b. Small requirement" [label="Small"];
+    "4a. Large requirement" -> "5a. writing-plans skill";
+    "4b. Small requirement" -> "5b. plan skill";
+    "5a. writing-plans skill" -> "5a. Output: docs/superpowers/plans/<date>-<feature>.md";
+    "5a. Output: docs/superpowers/plans/<date>-<feature>.md" -> "5a. plan review loop";
+    "5a. plan review loop" -> "6. using-git-worktrees";
+    "5b. plan skill" -> "6. using-git-worktrees";
+    "6. using-git-worktrees" -> "7. Task execution mode";
+    "7. Task execution mode" -> "7a. Parallel tasks" [label="Parallel"];
+    "7. Task execution mode" -> "7b. Sequential tasks" [label="Sequential"];
+    "7. Task execution mode" -> "7c. subagent-driven-development" [label="Subagent-driven"];
+    "7a. Parallel tasks" -> "7c. subagent-driven-development";
+    "7b. Sequential tasks" -> "7c. subagent-driven-development";
+    "7c. subagent-driven-development" -> "8. requesting-code-review";
+    "8. requesting-code-review" -> "8b. receiving-code-review";
+    "8b. receiving-code-review" -> "9. finishing-a-development-branch" [label="CR Passed"];
+    "8b. receiving-code-review" -> "7c. subagent-driven-development" [label="CR Issues → Fix"];
+    "9. finishing-a-development-branch" -> "10. Return to main window";
+}
 ```
 
-## 参数
+## Bugfix Workflow
 
-$ARGUMENTS:
-- `feature <描述>` - 完整功能工作流
-- `bugfix <描述>` - Bug 修复工作流
-- `refactor <描述>` - 重构工作流
-- `custom <代理列表> <描述>` - 自定义代理序列
+```dot
+digraph orchestrate_bugfix_workflow {
+    rankdir=TB;
+    node [shape=box style=filled fillcolor=lightyellow];
 
-## 自定义工作流示例
+    "1. User starts /orchestrate bugfix\n[Main Window - Orchestration]" [shape=doublecircle fillcolor=lightblue];
+
+    "2. Quick bug reproduction\n[Main window or subagent]" [fillcolor=lightgreen];
+
+    "3. Fix using TDD\n(test-driven-development)" [fillcolor=lightpink];
+    "3. Each fix:\n- Write failing test\n- Verify RED\n- Minimal implementation\n- Verify GREEN\n- Refactor" [fillcolor=lightpink];
+
+    "4. requesting-code-review\n[Subagent - Code Review]" [fillcolor=lightpink];
+    "4b. receiving-code-review\n[Handle CR feedback]" [fillcolor=lightpink];
+
+    "5. Commit fix\n[Main Window]" [fillcolor=lightblue];
+
+    "1. User starts /orchestrate bugfix" -> "2. Quick bug reproduction";
+    "2. Quick bug reproduction" -> "3. Fix using TDD";
+    "3. Fix using TDD" -> "4. requesting-code-review";
+    "4. requesting-code-review" -> "4b. receiving-code-review";
+    "4b. receiving-code-review" -> "5. Commit fix" [label="CR Passed"];
+    "4b. receiving-code-review" -> "3. Fix using TDD" [label="CR Issues → Fix"];
+}
+```
+
+## Refactor Workflow
+
+```dot
+digraph orchestrate_refactor_workflow {
+    rankdir=TB;
+    node [shape=box style=filled fillcolor=lightyellow];
+
+    "1. User starts /orchestrate refactor\n[Main Window - Orchestration]" [shape=doublecircle fillcolor=lightblue];
+
+    "2. Define refactor scope\n[Main Window - Clarify with user]" [fillcolor=lightgreen];
+
+    "3. using-git-worktrees\n[Subagent - Create isolated workspace]" [fillcolor=lightpink];
+
+    "4. TDD baseline\n(test-driven-development)" [fillcolor=lightpink];
+    "4. Ensure tests exist\nbefore refactoring" [fillcolor=lightpink];
+
+    "5. Refactor\n[Subagent per area]" [fillcolor=lightpink];
+
+    "6. requesting-code-review\n[Subagent - Code Review]" [fillcolor=lightpink];
+
+    "7. finishing-a-development-branch\n[Complete branch]" [fillcolor=lightpink];
+
+    "1. User starts /orchestrate refactor" -> "2. Define refactor scope";
+    "2. Define refactor scope" -> "3. using-git-worktrees";
+    "3. using-git-worktrees" -> "4. TDD baseline";
+    "4. TDD baseline" -> "5. Refactor";
+    "5. Refactor" -> "6. requesting-code-review";
+    "6. requesting-code-review" -> "7. finishing-a-development-branch";
+}
+```
+
+## Skill Dependencies
+
+| Skill | Execution | Purpose |
+|-------|-----------|---------|
+| **orchestrate** | Main window | Unified entry point |
+| **brainstorming** | Main window | Requirements clarification |
+| **writing-plans** | Subagent | Detailed plan for large requirements |
+| **plan** | Subagent | Lightweight plan for small requirements |
+| **using-git-worktrees** | Subagent | Isolated workspace setup |
+| **subagent-driven-development** | Subagent | Per-task execution |
+| **test-driven-development** | Subagent | TDD cycle |
+| **dispatching-parallel-agents** | Subagent | Parallel task execution |
+| **requesting-code-review** | Subagent | Code review |
+| **receiving-code-review** | Subagent | Handle CR feedback |
+| **finishing-a-development-branch** | Subagent | Complete branch |
+
+## When to Use
+
+| Scenario | Workflow | Plan Type |
+|----------|----------|-----------|
+| New feature (complex) | feature | writing-plans → file output |
+| New feature (simple) | feature | plan → in-memory |
+| Bug fix | bugfix | TDD → subagent |
+| Safe refactoring | refactor | TDD baseline → subagent |
+| Multi-subsystem project | feature (decomposed) | Separate plan per subsystem |
+
+## Decision Logic
 
 ```
-/orchestrate custom "architect,tdd-guide,code-reviewer" "重新设计缓存层"
+Is this a creative/implementation task?
+  └── YES → Use brainstorming first (main window)
+       └── After brainstorming:
+            ├── Large requirement? → writing-plans (subagent, file output)
+            └── Small requirement? → plan (subagent, in-memory)
+  └── NO (simple/known) → Skip brainstorming
+       └── Direct to appropriate workflow
 ```
 
-## 提示
+## Subagent Templates
 
-1. **复杂功能从 planner 开始**
-2. **合并前务必包含 code-reviewer**
-3. **保持交接文档简洁** - 聚焦下一代理所需内容
-4. **如需要在代理间运行验证**
+See `subagent-templates.md` for subagent dispatch templates.
+
+## Red Flags
+
+**Never:**
+- Implement in main window (all work in subagents)
+- Skip brainstorming for creative tasks
+- Skip TDD for bug fixes
+- Skip code review
+- Skip CR feedback handling
+
+**Always:**
+- Use orchestrate as single entry point
+- Dispatch subagents for all implementation
+- Handle CR feedback before proceeding

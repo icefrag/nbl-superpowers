@@ -1,0 +1,73 @@
+digraph orchestrate_workflows {
+    rankdir=TB;
+    node [shape=box style=filled];
+
+    // Entry point
+    orchestrate [shape=doublecircle fillcolor=lightblue label="orchestrate skill\n(Entry Point)"];
+
+    // Workflow branches
+    subgraph cluster_feature {
+        label="Feature Workflow";
+        style=filled;
+        color=lightgray;
+
+        brainstorming [fillcolor=lightgreen label="brainstorming\n(Main Window)"];
+        assess_size [shape=diamond fillcolor=lightyellow label="Size?"];
+        writing_plans [fillcolor=lightpink label="writing-plans\n(Large)"];
+        plan_skill [fillcolor=lightpink label="plan skill\n(Small)"];
+        worktree [fillcolor=lightpink label="using-git-worktrees"];
+        execute [fillcolor=lightpink label="subagent-driven-development"];
+        code_review [fillcolor=lightpink label="requesting-code-review"];
+        finish [fillcolor=lightpink label="finishing-a-development-branch"];
+    }
+
+    subgraph cluster_bugfix {
+        label="Bugfix Workflow";
+        style=filled;
+        color=lightgray;
+
+        reproduce [fillcolor=lightgreen label="Reproduce bug"];
+        tdd [fillcolor=lightpink label="test-driven-development"];
+        cr [fillcolor=lightpink label="requesting-code-review"];
+        commit [fillcolor=lightblue label="Commit"];
+    }
+
+    subgraph cluster_refactor {
+        label="Refactor Workflow";
+        style=filled;
+        color=lightgray;
+
+        scope [fillcolor=lightgreen label="Define scope"];
+        baseline [fillcolor=lightpink label="TDD baseline"];
+        refactor [fillcolor=lightpink label="Refactor"];
+        finish_r [fillcolor=lightpink label="finishing-a-development-branch"];
+    }
+
+    // Feature flow
+    orchestrate -> brainstorming;
+    brainstorming -> assess_size;
+    assess_size -> writing_plans [label="Large"];
+    assess_size -> plan_skill [label="Small"];
+    writing_plans -> worktree;
+    plan_skill -> worktree;
+    worktree -> execute;
+    execute -> code_review;
+    code_review -> finish;
+
+    // Bugfix flow
+    orchestrate -> reproduce [label="bugfix"];
+    reproduce -> tdd;
+    tdd -> cr;
+    cr -> commit;
+
+    // Refactor flow
+    orchestrate -> scope [label="refactor"];
+    scope -> worktree;
+    worktree -> baseline;
+    baseline -> refactor;
+    refactor -> finish_r;
+
+    // Code review feedback loop
+    code_review -> brainstorming [label="CR issues" style=dashed color=red];
+    cr -> tdd [label="CR issues" style=dashed color=red];
+}
