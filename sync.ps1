@@ -25,10 +25,6 @@ $Targets = @{
         Source = Join-Path $ScriptDir "rules"
         Dest   = Join-Path $ClaudeUserDir "rules"
     }
-    "agents" = @{
-        Source = Join-Path $ScriptDir "agents"
-        Dest   = Join-Path $ClaudeUserDir "agents"
-    }
 }
 
 # 颜色辅助函数
@@ -115,7 +111,7 @@ function Copy-SingleFile {
     Write-OK "已复制: $relativePath"
 }
 
-# 同步目录（覆盖模式）
+# 同步目录（覆盖模式：先删除目标目录再复制）
 function Sync-FullDirectory {
     param($Name, $SrcPath, $DestPath)
 
@@ -124,10 +120,15 @@ function Sync-FullDirectory {
         return 0
     }
 
-    if (-not (Test-Path $DestPath)) {
-        New-Item -ItemType Directory -Path $DestPath -Force | Out-Null
-        Write-Info "已创建目录: $DestPath"
+    # 先删除目标目录（如果存在）
+    if (Test-Path $DestPath) {
+        Remove-Item -Path $DestPath -Recurse -Force
+        Write-Info "已删除旧目录: $DestPath"
     }
+
+    # 创建目标目录
+    New-Item -ItemType Directory -Path $DestPath -Force | Out-Null
+    Write-Info "已创建目录: $DestPath"
 
     $copied = 0
     $files = Get-ChildItem $SrcPath -Recurse -File
@@ -216,13 +217,12 @@ function Show-MainMenu {
     Write-Host ("  2. commands - {0} 个文件" -f $counts["commands"]) -ForegroundColor Yellow
     Write-Host ("  3. skills - {0} 个文件" -f $counts["skills"]) -ForegroundColor Yellow
     Write-Host ("  4. rules - {0} 个文件" -f $counts["rules"]) -ForegroundColor Yellow
-    Write-Host ("  5. agents - {0} 个文件" -f $counts["agents"]) -ForegroundColor Yellow
     Write-Host "  0. 退出" -ForegroundColor Gray
     Write-Host ""
 
     do {
         $choice = Read-Host "请选择"
-    } while ($choice -notmatch "^[0-5]$")
+    } while ($choice -notmatch "^[0-4]$")
 
     return $choice
 }
@@ -260,7 +260,7 @@ while ($true) {
         Write-Host "全量同步完成: 共 $total 个文件" -ForegroundColor Green
     }
     else {
-        $keys = @("commands", "skills", "rules", "agents")
+        $keys = @("commands", "skills", "rules")
         $idx = [int]$choice - 2
         $key = $keys[$idx]
         $config = $Targets[$key]
