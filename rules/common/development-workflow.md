@@ -2,37 +2,41 @@
 
 > 本文件扩展了 [common/git-workflow.md](./git-workflow.md)，描述git操作之前的完整功能开发流程。
 
-功能实现工作流描述了开发管道：研究、规划、TDD、代码审查，然后提交到git。
+## 统一入口
+
+所有开发工作通过 `/orchestrate` 入口：
+
+```
+/orchestrate feature "<描述>"   # 新功能开发
+/orchestrate bugfix "<描述>"    # Bug修复
+/orchestrate refactor "<描述>"  # 代码重构
+```
 
 ## 功能实现工作流
 
-0. **研究与复用** _(任何新实现前必须执行)_
-   - **GitHub代码搜索优先：** 在编写任何新代码之前，运行 `gh search repos` 和 `gh search code` 查找现有的实现、模板和模式。
-   - **库文档其次：** 使用 Context7 或主要供应商文档来确认API行为、包使用和版本特定细节。
-   - **仅当前两者不足时使用Exa：** 在GitHub搜索和主要文档之后，使用Exa进行更广泛的网络研究或发现。
-   - **检查包注册表：** 在编写工具代码之前搜索npm、PyPI、crates.io和其他注册表。优先选择经过实战检验的库而非自行编写的解决方案。
-   - **搜索可适配的实现：** 寻找能解决80%以上问题且可以分叉、移植或包装的开源项目。
-   - 当满足需求时，优先采用或移植已验证的方法，而非编写全新代码。
+1. **研究与复用** _(任何新实现前必须执行)_
+   - 在编写任何新代码之前，搜索现有的实现、模板和模式
+   - 优先采用或移植已验证的方法，而非编写全新代码
 
-1. **先规划**
-   - 使用 **planner** 代理创建实现计划
-   - 编码前生成规划文档：PRD、架构、系统设计、技术文档、任务列表
-   - 识别依赖和风险
-   - 分解为多个阶段
+2. **需求澄清** (通过 `/orchestrate feature`)
+   - 使用 **brainstorming** skill 澄清需求
+   - 大需求输出设计文档到 `docs/superpowers/specs/`
+   - 小需求跳过此步骤
 
-2. **TDD方法**
-   - 使用 **tdd-guide** 代理
+3. **规划**
+   - 大需求: 使用 **writing-plans** skill 生成详细计划
+   - 小需求: 使用 **plan** skill 生成轻量计划
+
+4. **TDD实现** (子代理执行)
+   - 使用 **test-driven-development** skill
    - 先写测试（RED）
    - 实现以通过测试（GREEN）
    - 重构（IMPROVE）
-   - 验证80%以上覆盖率
 
-3. **代码审查**
-   - 编写代码后立即使用 **code-reviewer** 代理
-   - 处理CRITICAL和HIGH问题
-   - 尽可能修复MEDIUM问题
+5. **代码审查**
+   - 使用 **requesting-code-review** skill
+   - 使用 **receiving-code-review** skill 处理反馈
 
-4. **提交与推送**
-   - 详细的提交消息
-   - 遵循约定式提交格式
-   - 提交消息格式和PR流程见 [git-workflow.md](./git-workflow.md)
+6. **提交与推送**
+   - 使用 **finishing-a-development-branch** skill
+   - 详细的提交消息，遵循约定式提交格式

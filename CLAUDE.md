@@ -4,154 +4,78 @@
 
 ## Skills
 
-### 开发工作流
+### Orchestrate 工作流 (开发工作流入口)
 
-| Skill | 描述 | 依赖Agent | 依赖Rule |
-|-------|------|----------|---------|
-| **plan** | 需求规划和实现计划 | planner | architecture, naming |
-| **test-driven-development** | 测试驱动开发 | tdd-guide | architecture, naming, coding-conventions |
-| **code-review** | 代码审查 | code-reviewer | architecture, naming, coding-conventions |
-| **build-fix** | 构建错误修复 | build-error-resolver | architecture, naming, coding-conventions |
-| **verify** | 综合验证系统 | - | all rules |
-| **refactor-clean** | 死代码清理 | refactor-cleaner | - |
-| **test-coverage** | 测试覆盖率分析 | - | architecture, naming, coding-conventions |
+| Skill | 描述 | 阶段 |
+|-------|------|------|
+| **orchestrate** | 统一工作流入口点 | 入口 |
+| **brainstorming** | 需求澄清和规格文档 | 需求 |
+| **writing-plans** | 大需求详细计划 | 规划 |
+| **plan** | 小需求轻量计划 | 规划 |
+| **using-git-worktrees** | 隔离工作区 | 准备 |
+| **subagent-driven-development** | 子代理执行任务 | 执行 |
+| **test-driven-development** | TDD开发 | 执行 |
+| **dispatching-parallel-agents** | 并行任务调度 | 执行 |
+| **requesting-code-review** | 请求代码审查 | 审查 |
+| **receiving-code-review** | 处理CR反馈 | 审查 |
+| **finishing-a-development-branch** | 完成开发分支 | 收尾 |
 
-### 会话管理
+### 独立工具 Skills
 
-| Skill | 描述 |
-|-------|------|
-| **save-session** | 保存会话状态以便恢复 |
-| **resume-session** | 从保存的会话恢复工作 |
-
-### 多代理编排
-
-| Skill | 描述 | 依赖Agent |
-|-------|------|----------|
-| **orchestrate** | 多代理工作流编排 | planner, tdd-guide, code-reviewer |
-| **devfleet** | DevFleet 并行多代理系统 | - |
-
-### 文档与规则
-
-| Skill | 描述 | 依赖Agent |
-|-------|------|----------|
-| **update-codemaps** | 更新代码地图 | doc-updater |
-| **update-rules** | 规则文件更新 | code-reviewer |
-
-### Java/Spring Boot
-
-| Skill | 描述 |
-|-------|------|
-| **springboot-patterns** | Spring Boot架构模式、REST API设计 |
-| **java-coding-standards** | Java编码标准 |
-
-### 通用/语言无关
-
-| Skill | 描述 |
-|-------|------|
-| **blueprint** | 多会话工程项目规划 |
-| **prompt-optimizer** | Prompt优化分析 |
-| **tech-design** | 技术设计文档生成 |
-| **coding-standards** | 通用编码标准 |
-
-### AI/代理相关
-
-| Skill | 描述 |
-|-------|------|
-| **continuous-learning** | 持续学习机制 |
-| **continuous-agent-loop** | 持续代理循环 |
-| **autonomous-loops** | 自主循环模式 |
-| **eval-harness** | 评估框架 |
-
-### 工具/实用程序
-
-| Skill | 描述 |
-|-------|------|
-| **deep-research** | 深度研究 |
-| **search-first** | 搜索优先模式 |
-| **verification-loop** | 验证循环 |
-| **strategic-compact** | 战略精简 |
-| **plankton-code-quality** | 代码质量检查 |
-| **iterative-retrieval** | 迭代检索 |
-
-## Agents
-
-| Agent | 描述 | 依赖Skill | 依赖Rule |
-|-------|------|----------|---------|
-| **planner** | 复杂功能和重构规划 | plan | architecture, naming |
-| **architect** | 系统设计和架构决策 | - | architecture, naming |
-| **tdd-guide** | 测试驱动开发 | test-driven-development | architecture, naming, coding-conventions |
-| **code-reviewer** | Java/Spring Boot代码审查 | springboot-patterns | architecture, naming, coding-conventions |
-| **build-error-resolver** | 构建错误修复 | springboot-patterns | architecture, naming, coding-conventions |
-| **refactor-cleaner** | 死代码清理 | - | - |
-| **doc-updater** | 文档和代码地图更新 | - | - |
+| Skill | 描述 | 触发场景 |
+|-------|------|---------|
+| **refactor-clean** | 死代码清理 | 清理未使用代码 |
+| **test-coverage** | 测试覆盖率分析 | 分析测试缺口 |
+| **tech-design** | 技术设计文档 | 生成技术方案 |
+| **deep-research** | 深度研究 | 网络调研 |
+| **update-codemaps** | 更新CLAUDE.md | 项目结构变化 |
+| **update-rules** | 规则文件更新 | 修改编码规范 |
+| **writing-skills** | 编写新skill | 创建/修改skill |
+| **prompt-optimizer** | Prompt优化 | 优化用户prompt |
 
 ## Rules
 
-| Rule文件 | 描述 | 被谁使用 |
-|---------|------|---------|
-| **architecture.md** | 分层架构、模块化设计、包结构、URI规范 | planner, architect, tdd-guide, code-reviewer, build-error-resolver, tech-design |
-| **naming.md** | Entity/Service/枚举/参数命名规范 | planner, architect, tdd-guide, code-reviewer, build-error-resolver, tech-design |
-| **coding-conventions.md** | Spring注入、数据持久化、工具类使用等开发规范 | tdd-guide, code-reviewer, build-error-resolver, tech-design |
+| Rule文件 | 描述 |
+|---------|------|
+| **architecture.md** | 分层架构、模块化设计、包结构、URI规范 |
+| **naming.md** | Entity/Service/枚举/参数命名规范 |
+| **coding-conventions.md** | Spring注入、数据持久化、工具类使用等开发规范 |
 
-## 工作流依赖图
+## 工作流
 
 ```
-设计阶段:
-  /tech-design ───> tech-design skill ──────> architecture.md + naming.md + coding-conventions.md
-       │
-       ▼
-  /plan ──────────> planner ────────────────> architecture.md + naming.md
-       │                   │
-       │                   ▼
-开发阶段:                   │
-  /tdd ───────────> tdd-guide ──────────────> test-driven-development ──> all rules
-       │                   │
-       │                   ▼
-  /build-fix ─────> build-error-resolver ───> springboot-patterns ──> all rules
-       │                   │
-       │                   ▼
-审查阶段:                   │
-  /code-review ───> code-reviewer ──────────> springboot-patterns ──> all rules
+/orchestrate feature "描述"  →  brainstorming → writing-plans/plan →
+                                   subagent-driven-development → code-review → finish
+
+/orchestrate bugfix "描述"   →  TDD修复 → code-review → commit
+
+/orchestrate refactor "描述" →  TDD基线 → refactor → code-review → finish
 ```
 
-## 规则使用场景
+## Skills 目录结构
 
-| 场景 | 推荐Skill | 推荐Agent | 推荐Rule | 说明 |
-|------|---------|----------|---------|------|
-| 技术设计文档 | tech-design | - | architecture + naming + coding-conventions | 架构图、API设计、数据库模型设计 |
-| 新功能设计 | plan | planner | architecture + naming | 确定包结构、类命名、接口设计 |
-| 编码实现 | test-driven-development | tdd-guide | all rules | 完整的开发规范 |
-| 代码审查 | code-review | code-reviewer | all rules | 检查是否符合规范 |
-| Bug修复 | build-fix | build-error-resolver | coding-conventions | 主要关注数据持久化和异常处理规范 |
-
-## Rule文件内容概览
-
-### rules/common/architecture.md
-- 分层架构原则 (Controller/Service/Manager/Mapper)
-- 模块化设计原则 (app/api/config/assembly)
-- 层间调用规范
-- URI命名规范
-- 包结构规范
-
-### rules/common/naming.md
-- Entity命名规范
-- Service接口命名规范
-- 枚举类命名规范
-- 操作人参数命名规范
-- 事件对象命名规范
-- 分页参数命名规范
-
-### rules/common/coding-conventions.md
-- Spring依赖注入规范
-- Lombok @Builder使用规范
-- 数据持久化规范 (ID生成/表设计/更新/查询)
-- JSON操作规范 (JsonUtil)
-- 枚举工具类规范 (EnumUtil)
-- 异常处理规范
-- Controller返回值规范
-- FeignClient接口规范
-- 日期时间格式规范
-- Swagger注解规范
+```
+skills/
+├── orchestrate/                 # 统一工作流入口
+├── brainstorming/              # 需求澄清
+├── writing-plans/              # 详细计划
+├── plan/                       # 轻量计划
+├── using-git-worktrees/        # 隔离工作区
+├── subagent-driven-development/# 子代理执行
+├── test-driven-development/    # TDD
+├── dispatching-parallel-agents/# 并行调度
+├── requesting-code-review/     # 请求CR
+├── receiving-code-review/      # 处理CR
+├── finishing-a-development-branch/ # 完成分支
+├── refactor-clean/             # 死代码清理
+├── test-coverage/              # 测试覆盖率
+├── tech-design/                # 技术设计
+├── deep-research/              # 深度研究
+├── update-codemaps/            # 更新代码地图
+├── update-rules/               # 规则更新
+├── writing-skills/             # 编写skill
+└── prompt-optimizer/           # Prompt优化
+```
 
 ## 注意事项 (NON-NEGOTIABLE)
 
@@ -163,38 +87,3 @@
 |---------|------|------|
 | ✅ 项目规则 | `rules/common/xxx.md` | 本项目专用规则 |
 | ❌ 全局规则 | `~/.claude/rules/common/xxx.md` | 所有项目共享规则 |
-
-**项目规则目录完整路径**：`D:\workspace\guozhi-claude-code\rules\common\`
-**全局规则目录完整路径**：`C:\Users\icefr\.claude\rules\common\`
-
-## Skills 目录
-
-项目所有 skill 位于 `skills/` 目录，每个 skill 是一个独立文件夹，包含 `SKILL.md` 定义文件。
-
-### Skill 目录结构
-
-```
-skills/
-├── plan/                    # 需求规划和实现计划
-├── code-review/             # Java/Spring Boot 代码审查
-├── build-fix/               # 构建错误修复
-├── orchestrate/             # 多代理工作流编排
-├── refactor-clean/          # 死代码清理
-├── test-coverage/           # 测试覆盖率分析
-├── update-codemaps/         # 更新代码地图
-├── update-rules/            # 规则文件更新
-├── tech-design/             # 技术设计文档生成
-├── prompt-optimizer/        # Prompt 优化分析
-├── test-driven-development/ # 测试驱动开发
-├── springboot-patterns/     # Spring Boot 架构模式
-├── java-coding-standards/   # Java 编码标准
-├── blueprint/               # 多会话工程项目规划
-└── deep-research/           # 深度研究
-```
-
-### 调用方式
-
-所有 skills 都可以通过 `/skill-name` 方式调用，例如：
-- `/plan` - 需求规划
-- `/code-review` - 代码审查
-- `/verify` - 综合验证

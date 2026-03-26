@@ -100,11 +100,6 @@ Agent (planner):
 
 ## 与其他 skill 的集成
 
-规划完成后：
+规划完成后，通过 `/orchestrate feature` 进入实现阶段：
 - 使用 `test-driven-development` skill 通过测试驱动开发实现
-- 使用 `build-fix` skill 修复构建错误
-- 使用 `code-review` skill 进行审查
-
-## 相关代理
-
-此 skill 调用 `planner` 代理（`agents/planner.md`）。
+- 使用 `requesting-code-review` skill 进行审查
