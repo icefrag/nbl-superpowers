@@ -26,12 +26,11 @@
 
 ## Skills
 
-### Orchestrate 工作流 (开发工作流入口)
+### 开发工作流
 
 | Skill | 描述 | 阶段 |
 |-------|------|------|
-| **nbl.orchestrate** | 统一工作流入口点 | 入口 |
-| **nbl.brainstorming** | 需求澄清和规格文档 | 需求 |
+| **nbl.brainstorming** | 需求澄清和规格文档（入口点） | 需求 |
 | **nbl.writing-plans** | 详细计划 | 规划 |
 | **nbl.using-git-worktrees** | 隔离工作区 | 准备 |
 | **nbl.subagent-driven-development** | 子代理执行任务 | 执行 |
@@ -64,20 +63,14 @@
 ## 工作流
 
 ```
-/nbl.orchestrate feature "描述"  →  nbl.brainstorming → nbl.writing-plans →
-                                          nbl.subagent-driven-development → code-review → finish
-
-/nbl.orchestrate bugfix "描述"   →  TDD修复 → code-review → commit
-
-/nbl.orchestrate refactor "描述" →  TDD基线 → refactor → code-review → finish
+nbl.brainstorming → nbl.writing-plans → nbl.subagent-driven-development → code-review → finish
 ```
 
 ## Skills 目录结构
 
 ```
 skills/
-├── nbl.orchestrate/                 # 统一工作流入口
-├── nbl.brainstorming/              # 需求澄清
+├── nbl.brainstorming/              # 需求澄清（入口点）
 ├── nbl.writing-plans/              # 详细计划
 ├── nbl.using-git-worktrees/        # 隔离工作区
 ├── nbl.subagent-driven-development/# 子代理执行

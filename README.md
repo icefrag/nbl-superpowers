@@ -40,12 +40,11 @@
 
 ## Skills
 
-### Orchestrate 工作流 (开发工作流入口)
+### 开发工作流
 
 | Skill | 描述 | 阶段 |
 |-------|------|------|
-| **nbl.orchestrate** | 统一工作流入口点 | 入口 |
-| **nbl.brainstorming** | 需求澄清和规格文档 | 需求 |
+| **nbl.brainstorming** | 需求澄清和规格文档（入口点） | 需求 |
 | **nbl.writing-plans** | 详细计划 + 执行模式分析 | 规划 |
 | **nbl.using-git-worktrees** | 隔离工作区 | 准备 |
 | **nbl.executing-plans** | 主 agent 直接执行 | 执行 (inline) |
@@ -99,7 +98,7 @@
 ### Feature 开发完整流程
 
 ```
-/nbl.orchestrate feature "描述"
+/nbl.brainstorming "描述"
     ↓
 nbl.brainstorming
     ├── 需求澄清
@@ -121,14 +120,6 @@ nbl.writing-plans
 nbl.finishing-a-development-branch
 ```
 
-### 快捷工作流
-
-```
-/nbl.orchestrate bugfix "描述"   →  TDD修复 → code-review → commit
-
-/nbl.orchestrate refactor "描述" →  TDD基线 → refactor → code-review → finish
-```
-
 ## 目录结构
 
 ```
@@ -136,8 +127,7 @@ agents/
 └── code-reviewer.md          # 代码审查 agent
 
 skills/
-├── nbl.orchestrate/                 # 统一工作流入口
-├── nbl.brainstorming/              # 需求澄清 + 自动执行模式分发
+├── nbl.brainstorming/              # 需求澄清 + 自动执行模式分发（入口点）
 ├── nbl.writing-plans/              # 详细计划 + 执行模式分析
 ├── nbl.using-git-worktrees/        # 隔离工作区
 ├── nbl.executing-plans/            # 主 agent 直接执行 (inline 模式)
