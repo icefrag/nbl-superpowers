@@ -36,7 +36,7 @@ Task tool (general-purpose):
     5. Self-review (see below)
     6. Report back
 
-    Work from: .worktrees/{branch}-task{id}  # Your isolated worktree (e.g., .worktrees/feature-auth-task3)
+    Work from: [directory]
 
     **While you work:** If you encounter something unexpected or unclear, **ask questions**.
     It's always OK to pause and clarify. Don't guess or make assumptions.

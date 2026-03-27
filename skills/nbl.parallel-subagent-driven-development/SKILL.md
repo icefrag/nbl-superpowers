@@ -568,29 +568,6 @@ User answers C → C resumes → pending = [], current = null → wait for compl
 - `./spec-reviewer-prompt.md` - Dispatch spec compliance reviewer subagent
 - `./code-quality-reviewer-prompt.md` - Dispatch code quality reviewer subagent
 
-### Subagent Work Directory Assignment
-
-When dispatching implementer subagent, **MUST** specify the worktree directory:
-
-**Worktree naming convention:**
-```
-.worktrees/{branch-name}-task{task-id}
-```
-
-**Example:**
-```
-Task 3 (logging service):
-  Work from: .worktrees/feature-auth-task3
-
-Task 5 (audit module):
-  Work from: .worktrees/feature-auth-task5
-```
-
-**When filling implementer-prompt.md template:**
-- Replace `[directory]` with the corresponding worktree path
-- Each subagent gets its own isolated worktree
-- Subagent works in that directory for the entire task lifecycle
-
 ## Advantages
 
 **vs. Manual execution:**
