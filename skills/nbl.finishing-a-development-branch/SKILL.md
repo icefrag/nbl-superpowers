@@ -151,7 +151,7 @@ git worktree remove <worktree-path>
 
 ### Step 6: Batch Cleanup Parallel Worktrees
 
-After all parallel tasks are merged to base branch, clean up all parallel worktrees:
+After all parallel tasks are merged to base branch, clean up any remaining parallel worktrees (some may have been cleaned up by parallel-subagent-driven-development after each task merge):
 
 ```bash
 # Check if .worktrees directory exists
@@ -163,7 +163,7 @@ if [ -d ".worktrees" ] && [ "$(ls -A .worktrees)" ]; then
 
     # For each worktree under .worktrees/
     for wt_path in .worktrees/*/; do
-        # Skip if not a directory
+        # Skip if not a directory (already removed)
         [ -d "$wt_path" ] || continue
 
         # Get the branch name for this worktree
@@ -172,8 +172,13 @@ if [ -d ".worktrees" ] && [ "$(ls -A .worktrees)" ]; then
         if [ -n "$worktree_branch" ]; then
             # Check if branch is merged to base branch
             if git merge-base --is-ancestor "$worktree_branch" "$base_branch" 2>/dev/null; then
-                echo "Removing merged worktree: $wt_path (branch: $worktree_branch)"
-                git worktree remove "$wt_path" 2>/dev/null || true
+                # Check if worktree still exists (may have been cleaned up already)
+                if [ -d "$wt_path" ]; then
+                    echo "Removing merged worktree: $wt_path (branch: $worktree_branch)"
+                    git worktree remove "$wt_path" 2>/dev/null || true
+                else
+                    echo "Worktree already cleaned: $wt_path"
+                fi
                 # Try to delete the branch (use -D if already deleted via worktree remove)
                 git branch -d "$worktree_branch" 2>/dev/null || git branch -D "$worktree_branch" 2>/dev/null || true
             else
@@ -185,10 +190,10 @@ fi
 ```
 
 **Note:**
+- In parallel mode, `parallel-subagent-driven-development` cleans up worktree immediately after each task merge
+- This step only cleans up any worktrees that were skipped due to cleanup failures
 - Only worktrees in `.worktrees/` directory are cleaned up (parallel task convention)
 - Other worktrees outside `.worktrees/` are preserved
-- All parallel task branches should already be merged before reaching this step
-- If a branch is not merged, it's skipped (might be intentional or an error)
 
 ## Quick Reference
 
