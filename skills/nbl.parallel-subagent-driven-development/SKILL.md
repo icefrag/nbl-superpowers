@@ -564,9 +564,10 @@ User answers C → C resumes → pending = [], current = null → wait for compl
 
 ## Prompt Templates
 
-- `./implementer-prompt.md` - Dispatch implementer subagent
-- `./spec-reviewer-prompt.md` - Dispatch spec compliance reviewer subagent
-- `./code-quality-reviewer-prompt.md` - Dispatch code quality reviewer subagent
+Prompt templates are shared with serial subagent-driven-development:
+- `../nbl.subagent-driven-development/implementer-prompt.md` - Dispatch implementer subagent
+- `../nbl.subagent-driven-development/spec-reviewer-prompt.md` - Dispatch spec compliance reviewer subagent
+- `../nbl.subagent-driven-development/code-quality-reviewer-prompt.md` - Dispatch code quality reviewer subagent
 
 ## Advantages
 
