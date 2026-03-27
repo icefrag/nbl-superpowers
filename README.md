@@ -46,14 +46,27 @@
 |-------|------|------|
 | **nbl.orchestrate** | 统一工作流入口点 | 入口 |
 | **nbl.brainstorming** | 需求澄清和规格文档 | 需求 |
-| **nbl.writing-plans** | 详细计划 | 规划 |
+| **nbl.writing-plans** | 详细计划 + 执行模式分析 | 规划 |
 | **nbl.using-git-worktrees** | 隔离工作区 | 准备 |
-| **nbl.subagent-driven-development** | 子代理执行任务 | 执行 |
+| **nbl.executing-plans** | 主 agent 直接执行 | 执行 (inline) |
+| **nbl.subagent-driven-development** | 子代理串行执行任务 | 执行 (serial) |
+| **nbl.parallel-subagent-driven-development** | 子代理并行执行任务 | 执行 (parallel) |
 | **nbl.test-driven-development** | TDD开发 | 执行 |
-| **nbl.dispatching-parallel-agents** | 并行任务调度 | 执行 |
 | **nbl.requesting-code-review** | 请求代码审查 | 审查 |
 | **nbl.receiving-code-review** | 处理CR反馈 | 审查 |
 | **nbl.finishing-a-development-branch** | 完成开发分支 | 收尾 |
+
+### 执行模式自动选择
+
+`nbl.writing-plans` 根据任务依赖关系自动分析并返回执行模式：
+
+| 条件 | 执行模式 | 调用 Skill |
+|------|---------|-----------|
+| 单任务无依赖 | `inline` | `nbl.executing-plans` |
+| 任务链式依赖 | `serial` | `nbl.subagent-driven-development` |
+| 多任务可并行 | `parallel` | `nbl.parallel-subagent-driven-development` |
+
+`nbl.brainstorming` 接收模式后**自动调用**对应的执行 skill，无需用户干预。
 
 ### 独立工具 Skills
 
@@ -97,13 +110,13 @@ nbl.brainstorming
 nbl.writing-plans
     ├── 输出 Plan (docs/nbl/plans/)
     ├── 内审 Plan
-    └── 用户确认 Plan
+    ├── 用户确认 Plan
+    └── 分析执行模式 → { mode: "inline" | "serial" | "parallel" }
     ↓
-nbl.subagent-driven-development
-    ├── GATE 1: nbl.using-git-worktrees (隔离工作区)
-    ├── GATE 2: nbl.test-driven-development (TDD)
-    ├── GATE 3: nbl:spec-reviewer (规格合规审查)
-    └── GATE 4: nbl:code-reviewer (代码质量审查)
+[自动选择执行 Skill]
+    ├── inline  → nbl.executing-plans (主 agent 直接执行)
+    ├── serial  → nbl.subagent-driven-development (串行子代理)
+    └── parallel→ nbl.parallel-subagent-driven-development (并行子代理)
     ↓
 nbl.finishing-a-development-branch
 ```
@@ -124,12 +137,13 @@ agents/
 
 skills/
 ├── nbl.orchestrate/                 # 统一工作流入口
-├── nbl.brainstorming/              # 需求澄清
-├── nbl.writing-plans/              # 详细计划
+├── nbl.brainstorming/              # 需求澄清 + 自动执行模式分发
+├── nbl.writing-plans/              # 详细计划 + 执行模式分析
 ├── nbl.using-git-worktrees/        # 隔离工作区
-├── nbl.subagent-driven-development/# 子代理执行 (含 4 个 NON-NEGOTIABLE gates)
+├── nbl.executing-plans/            # 主 agent 直接执行 (inline 模式)
+├── nbl.subagent-driven-development/# 子代理串行执行 (serial 模式)
+├── nbl.parallel-subagent-driven-development/ # 子代理并行执行 (parallel 模式)
 ├── nbl.test-driven-development/    # TDD
-├── nbl.dispatching-parallel-agents/# 并行调度
 ├── nbl.requesting-code-review/     # 请求CR
 ├── nbl.receiving-code-review/      # 处理CR
 ├── nbl.finishing-a-development-branch/ # 完成分支
