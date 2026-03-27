@@ -133,7 +133,16 @@ Wait for the user's response. If they request changes, make them and re-run the 
 **Implementation:**
 
 - Invoke the writing-plans skill to create a detailed implementation plan
-- Do NOT invoke any other skill. writing-plans is the next step.
+- Receive execution mode from writing-plans: `{ mode: "inline" | "serial" | "parallel", plan_path: "..." }`
+- **Automatically invoke the appropriate execution skill** based on mode:
+
+| Mode | Skill to Invoke |
+|------|----------------|
+| `inline` | `nbl.executing-plans` |
+| `serial` | `nbl.subagent-driven-development` |
+| `parallel` | `nbl.parallel-subagent-driven-development` |
+
+**No user interaction required for execution mode selection.** The mode is determined programmatically from task dependencies.
 
 ## Key Principles
 

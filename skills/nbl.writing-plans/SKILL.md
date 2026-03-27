@@ -160,22 +160,88 @@ After writing the complete plan, look at the spec with fresh eyes and check the 
 
 If you find issues, fix them inline. No need to re-review — just fix and move on. If you find a spec requirement with no task, add the task.
 
-## Execution Handoff
+## Execution Mode Analysis
 
-After saving the plan, offer execution choice:
+After writing and self-reviewing the plan, analyze task dependencies to determine the execution mode.
 
-**"Plan complete and saved to `docs/nbl/plans/<filename>.md`. Two execution options:**
+### Analysis Rules
 
-**1. Subagent-Driven (recommended)** - I dispatch a fresh subagent per task, review between tasks, fast iteration
+| Condition | Execution Mode |
+|-----------|---------------|
+| Single task with `Dependencies: None` | `inline` |
+| All tasks form a chain (each depends on previous) | `serial` |
+| Multiple tasks with `Dependencies: None`, or tasks at same level can run together | `parallel` |
 
-**2. Inline Execution** - Execute tasks in this session using executing-plans, batch execution with checkpoints
+### Decision Logic
 
-**Which approach?"**
+```python
+# Pseudocode
+def determine_execution_mode(plan):
+    if len(plan.tasks) == 1:
+        return "inline"  # Single task, main agent can handle directly
 
-**If Subagent-Driven chosen:**
-- **REQUIRED SUB-SKILL:** Use nbl.subagent-driven-development
-- Fresh subagent per task + two-stage review
+    # Analyze dependency levels
+    levels = analyze_dependency_levels(plan.tasks)
 
-**If Inline Execution chosen:**
-- **REQUIRED SUB-SKILL:** Use nbl.executing-plans
-- Batch execution with checkpoints for review
+    if all(level has 1 task for level in levels):
+        return "serial"  # Pure chain dependency
+    else:
+        return "parallel"  # Has parallelizable tasks
+```
+
+### Examples
+
+**Inline (single task):**
+```
+Task 1: Add config field
+  Dependencies: None
+```
+
+**Serial (chain):**
+```
+Task 1: Define entity
+  Dependencies: None
+Task 2: Create mapper
+  Dependencies: Task 1
+Task 3: Implement service
+  Dependencies: Task 2
+```
+
+**Parallel (multiple independent):**
+```
+Task 1: User module
+  Dependencies: None
+Task 2: Order module
+  Dependencies: None
+Task 3: Payment module
+  Dependencies: None
+Task 4: Integration
+  Dependencies: Task 1, Task 2, Task 3
+```
+
+### Output Format
+
+Add to plan document footer:
+
+```markdown
+---
+**Execution Mode:** inline | serial | parallel
+```
+
+### Return Value
+
+**This skill MUST return the execution mode** to the caller (nbl.brainstorming) for automatic execution dispatch.
+
+Return format: `{ mode: "inline" | "serial" | "parallel", plan_path: "docs/nbl/plans/..." }`
+
+## Execution Handoff (AUTOMATIC)
+
+After saving the plan with execution mode, **return the mode to the caller**. The caller (nbl.brainstorming) will automatically invoke the appropriate skill:
+
+| Mode | Skill Invoked |
+|------|--------------|
+| `inline` | `nbl.executing-plans` |
+| `serial` | `nbl.subagent-driven-development` |
+| `parallel` | `nbl.parallel-subagent-driven-development` |
+
+**No user interaction required.** The execution mode is determined programmatically from task dependencies.
