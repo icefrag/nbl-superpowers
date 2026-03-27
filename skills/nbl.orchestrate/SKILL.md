@@ -154,7 +154,6 @@ All tasks follow the same flow:
 ## Red Flags
 
 **Never:**
-- Implement in main window (all work in subagents)
 - Skip brainstorming
 - Skip code review
 - Skip CR feedback handling
