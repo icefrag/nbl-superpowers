@@ -144,9 +144,30 @@ For each level:
     ├── Execute tasks (mode depends on count)
     │     ├── Single task → Simple mode (no pipeline overhead)
     │     └── Multiple tasks → Pipeline mode (process as each completes)
-    ├── Wait all tasks in level complete
+    ├── Wait all tasks in level complete (ALL steps)
     └── Proceed to next level
 ```
+
+### Level Completion Criteria
+
+**All tasks must complete ALL steps before next level:**
+
+| Step | Description | Must Pass? |
+|------|-------------|------------|
+| 1 | Implementer reports DONE | ✅ |
+| 2 | Spec compliance review | ✅ |
+| 3 | Code quality review | ✅ |
+| 4 | Rebase to base | ✅ |
+| 5 | Merge to base | ✅ |
+
+**Key rule:** Level completion = ALL tasks passed ALL steps.
+
+### Failure Handling
+
+If any task fails at any step:
+1. **Level is blocked** — do NOT proceed to next level
+2. **Fix the failing task** — implementer fixes, re-review
+3. **Resume once all tasks pass** — then proceed to next level
 
 ## Single-Task Execution
 
@@ -268,8 +289,9 @@ For each completed agent:
 | Agent blocked | Main agent provides context or re-dispatches |
 | Rebase conflict | Follow "Rebase Conflict Resolution" section below |
 | Merge fails | Rollback, fix, retry |
+| **Any task in level fails** | **Whole level blocked — do NOT proceed to next level** |
 
-**Rule:** One agent failure does not block other parallel agents from executing, but blocks that agent's subsequent merges until fixed.
+**Rule:** One agent failure does not block other parallel agents from executing, but blocks that agent's subsequent merges until fixed. Any failure at the level level blocks the entire level from completing.
 
 ## Rebase Conflict Resolution
 
