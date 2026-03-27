@@ -230,18 +230,6 @@ Add to plan document footer:
 
 ### Return Value
 
-**This skill MUST return the execution mode** to the caller (nbl.brainstorming) for automatic execution dispatch.
-
 Return format: `{ mode: "inline" | "serial" | "parallel", plan_path: "docs/nbl/plans/..." }`
 
-## Execution Handoff (AUTOMATIC)
-
-After saving the plan with execution mode, **return the mode to the caller**. The caller (nbl.brainstorming) will automatically invoke the appropriate skill:
-
-| Mode | Skill Invoked |
-|------|--------------|
-| `inline` | `nbl.executing-plans` |
-| `serial` | `nbl.subagent-driven-development` |
-| `parallel` | `nbl.parallel-subagent-driven-development` |
-
-**No user interaction required.** The execution mode is determined programmatically from task dependencies.
+The caller (nbl.brainstorming) handles skill dispatch based on the returned mode.
