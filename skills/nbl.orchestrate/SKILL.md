@@ -142,15 +142,6 @@ digraph orchestrate_bugfix_workflow {
 | Multi-subsystem project | feature (decomposed) | Separate plan per subsystem |
 | No subagent support | any | executing-plans |
 
-## Decision Logic
-
-```
-All tasks follow the same flow:
-  1. brainstorming (main window) → design.md
-  2. writing-plans (main window) → plan.md
-  3. Choose execution mode (see Complete Feature Workflow diagram)
-```
-
 ## Red Flags
 
 **Never:**
