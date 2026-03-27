@@ -19,6 +19,32 @@ Unified workflow orchestration entry point. All implementation happens in subage
 /orchestrate bugfix "<description>"   - Bug fix workflow
 ```
 
+## ⛔ CRITICAL: Planning → Execution Transition Gate
+
+**This check MUST happen BEFORE calling any execution skill.**
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  TRANSITION GATE: Planning → Execution                          │
+│                                                                 │
+│  When user says "continue execution" or "start execution":      │
+│                                                                 │
+│  1. Run: git branch --show-current                              │
+│  2. If result is "main" or "master":                            │
+│     ⛔ STOP → Invoke nbl.using-git-worktrees skill               │
+│     → Then proceed to execution                                 │
+│  3. If result is any other branch (including worktree):         │
+│     ✅ OK → Proceed to execution directly                        │
+│                                                                 │
+│  NEVER call execution skills while on main/master               │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+**Why this matters:**
+- Planning phase happens on main/master (reading docs, writing specs/plans)
+- Execution phase modifies code and MUST be isolated
+- This gate ensures the transition is explicit and safe
+
 ## Complete Feature Workflow
 
 ```dot
@@ -34,41 +60,47 @@ digraph orchestrate_feature_workflow {
     "4. writing-plans skill\n[Main Window]" [fillcolor=lightgreen];
     "5. Output: docs/nbl/plans/\n<date>-<feature>.md" [shape=note fillcolor=lightgray];
 
-    "6. Choose execution mode" [shape=diamond fillcolor=lightyellow];
+    "⛔ GATE: On main/master?" [shape=diamond fillcolor=lightcoral];
+    "6. using-git-worktrees\n[Create isolated workspace]" [fillcolor=lightpink];
+    "7. Choose execution mode" [shape=diamond fillcolor=lightyellow];
 
-    "7a. subagent-driven-development\n(per-task: implementer → spec review → quality review)" [fillcolor=lightpink];
-    "7b. parallel-subagent-driven-development\n(per-task: implementer → spec review → quality review → rebase → merge)" [fillcolor=lightpink];
-    "7c. executing-plans\n(no built-in review)" [fillcolor=lightpink];
+    "8a. subagent-driven-development\n(per-task: implementer → spec review → quality review)" [fillcolor=lightpink];
+    "8b. parallel-subagent-driven-development\n(per-task: implementer → spec review → quality review → rebase → merge)" [fillcolor=lightpink];
+    "8c. executing-plans\n(no built-in review)" [fillcolor=lightpink];
 
-    "8. All tasks complete?" [shape=diamond fillcolor=lightyellow];
-    "9. Final global code review\n(requesting-code-review)" [fillcolor=lightpink];
-    "10. receiving-code-review" [shape=diamond fillcolor=lightyellow];
-    "11. finishing-a-development-branch" [fillcolor=lightpink];
-    "12. Return to main window" [shape=doublecircle fillcolor=lightblue];
+    "9. All tasks complete?" [shape=diamond fillcolor=lightyellow];
+    "10. Final global code review\n(requesting-code-review)" [fillcolor=lightpink];
+    "11. receiving-code-review" [shape=diamond fillcolor=lightyellow];
+    "12. finishing-a-development-branch" [fillcolor=lightpink];
+    "13. Return to main window" [shape=doublecircle fillcolor=lightblue];
 
     "1. User starts /orchestrate feature" -> "2. brainstorming skill\n[Main Window]";
     "2. brainstorming skill\n[Main Window]" -> "3. Output: docs/nbl/specs/\n<date>-<topic>-design.md";
     "3. Output: docs/nbl/specs/\n<date>-<topic>-design.md" -> "4. writing-plans skill\n[Main Window]";
 
     "4. writing-plans skill\n[Main Window]" -> "5. Output: docs/nbl/plans/\n<date>-<feature>.md";
-    "5. Output: docs/nbl/plans/\n<date>-<feature>.md" -> "6. Choose execution mode";
+    "5. Output: docs/nbl/plans/\n<date>-<feature>.md" -> "⛔ GATE: On main/master?";
 
-    "6. Choose execution mode" -> "7a. subagent-driven-development\n(per-task: implementer → spec review → quality review)" [label="subagents + tightly coupled"];
-    "6. Choose execution mode" -> "7b. parallel-subagent-driven-development\n(per-task: implementer → spec review → quality review → rebase → merge)" [label="subagents + independent tasks"];
-    "6. Choose execution mode" -> "7c. executing-plans\n(no built-in review)" [label="no subagent support"];
+    "⛔ GATE: On main/master?" -> "6. using-git-worktrees\n[Create isolated workspace]" [label="YES ⛔"];
+    "⛔ GATE: On main/master?" -> "7. Choose execution mode" [label="NO ✅"];
+    "6. using-git-worktrees\n[Create isolated workspace]" -> "7. Choose execution mode";
 
-    "7a. subagent-driven-development\n(per-task: implementer → spec review → quality review)" -> "8. All tasks complete?";
-    "7b. parallel-subagent-driven-development\n(per-task: implementer → spec review → quality review → rebase → merge)" -> "8. All tasks complete?";
-    "7c. executing-plans\n(no built-in review)" -> "8. All tasks complete?";
+    "7. Choose execution mode" -> "8a. subagent-driven-development\n(per-task: implementer → spec review → quality review)" [label="subagents + tightly coupled"];
+    "7. Choose execution mode" -> "8b. parallel-subagent-driven-development\n(per-task: implementer → spec review → quality review → rebase → merge)" [label="subagents + independent tasks"];
+    "7. Choose execution mode" -> "8c. executing-plans\n(no built-in review)" [label="no subagent support"];
 
-    "8. All tasks complete?" -> "6. Choose execution mode" [label="no - issues"];
-    "8. All tasks complete?" -> "9. Final global code review\n(requesting-code-review)" [label="yes"];
+    "8a. subagent-driven-development\n(per-task: implementer → spec review → quality review)" -> "9. All tasks complete?";
+    "8b. parallel-subagent-driven-development\n(per-task: implementer → spec review → quality review → rebase → merge)" -> "9. All tasks complete?";
+    "8c. executing-plans\n(no built-in review)" -> "9. All tasks complete?";
 
-    "9. Final global code review\n(requesting-code-review)" -> "10. receiving-code-review";
-    "10. receiving-code-review" -> "7a. subagent-driven-development\n(per-task: implementer → spec review → quality review)" [label="issues → fix"];
-    "10. receiving-code-review" -> "11. finishing-a-development-branch" [label="passed"];
+    "9. All tasks complete?" -> "7. Choose execution mode" [label="no - issues"];
+    "9. All tasks complete?" -> "10. Final global code review\n(requesting-code-review)" [label="yes"];
 
-    "11. finishing-a-development-branch" -> "12. Return to main window";
+    "10. Final global code review\n(requesting-code-review)" -> "11. receiving-code-review";
+    "11. receiving-code-review" -> "8a. subagent-driven-development\n(per-task: implementer → spec review → quality review)" [label="issues → fix"];
+    "11. receiving-code-review" -> "12. finishing-a-development-branch" [label="passed"];
+
+    "12. finishing-a-development-branch" -> "13. Return to main window";
 }
 ```
 
@@ -76,10 +108,10 @@ digraph orchestrate_feature_workflow {
 
 | 层级 | 时机 | 内容 | 处理方式 |
 |------|------|------|---------|
-| **任务级**（内置在 7a/7b 中） | 每个任务完成后 | Stage 1: Spec Review → Stage 2: Quality Review | 实现子代理修复 → 重新审查 → 循环直到通过 |
-| **全局级**（步骤 9-10） | 所有任务完成后 | 整体代码审查 | receiving-code-review 处理反馈 → 有问题则返回修复 → 通过则继续 |
+| **任务级**（内置在 8a/8b 中） | 每个任务完成后 | Stage 1: Spec Review → Stage 2: Quality Review | 实现子代理修复 → 重新审查 → 循环直到通过 |
+| **全局级**（步骤 10-11） | 所有任务完成后 | 整体代码审查 | receiving-code-review 处理反馈 → 有问题则返回修复 → 通过则继续 |
 
-**注意：** executing-plans（7c）没有内置任务级审查，因此全局审查（步骤 9）是其唯一的代码质量保障。
+**注意：** executing-plans（8c）没有内置任务级审查，因此全局审查（步骤 10）是其唯一的代码质量保障。
 
 ## Bugfix Workflow
 
@@ -96,23 +128,30 @@ digraph orchestrate_bugfix_workflow {
     "4. writing-plans skill\n[Main Window]" [fillcolor=lightgreen];
     "5. Output: docs/nbl/plans/\n<date>-bugfix-<topic>.md" [shape=note fillcolor=lightgray];
 
-    "6. executing-plans\n[Subagent - Sequential execution]" [fillcolor=lightpink];
+    "⛔ GATE: On main/master?" [shape=diamond fillcolor=lightcoral];
+    "6. using-git-worktrees\n[Create isolated workspace]" [fillcolor=lightpink];
+    "7. executing-plans\n[Subagent - Sequential execution]" [fillcolor=lightpink];
 
-    "7. requesting-code-review\n[Subagent]" [fillcolor=lightpink];
-    "8. receiving-code-review" [shape=diamond fillcolor=lightyellow];
-    "9. finishing-a-development-branch" [fillcolor=lightpink];
-    "10. Return to main window" [shape=doublecircle fillcolor=lightblue];
+    "8. requesting-code-review\n[Subagent]" [fillcolor=lightpink];
+    "9. receiving-code-review" [shape=diamond fillcolor=lightyellow];
+    "10. finishing-a-development-branch" [fillcolor=lightpink];
+    "11. Return to main window" [shape=doublecircle fillcolor=lightblue];
 
     "1. /orchestrate bugfix" -> "2. brainstorming skill\n[Main Window]";
     "2. brainstorming skill\n[Main Window]" -> "3. Output: docs/nbl/specs/\n<date>-bugfix-<topic>-design.md";
     "3. Output: docs/nbl/specs/\n<date>-bugfix-<topic>-design.md" -> "4. writing-plans skill\n[Main Window]";
     "4. writing-plans skill\n[Main Window]" -> "5. Output: docs/nbl/plans/\n<date>-bugfix-<topic>.md";
-    "5. Output: docs/nbl/plans/\n<date>-bugfix-<topic>.md" -> "6. executing-plans\n[Subagent - Sequential execution]";
-    "6. executing-plans\n[Subagent - Sequential execution]" -> "7. requesting-code-review\n[Subagent]";
-    "7. requesting-code-review\n[Subagent]" -> "8. receiving-code-review";
-    "8. receiving-code-review" -> "6. executing-plans\n[Subagent - Sequential execution]" [label="issues → fix"];
-    "8. receiving-code-review" -> "9. finishing-a-development-branch" [label="passed"];
-    "9. finishing-a-development-branch" -> "10. Return to main window";
+
+    "5. Output: docs/nbl/plans/\n<date>-bugfix-<topic>.md" -> "⛔ GATE: On main/master?";
+    "⛔ GATE: On main/master?" -> "6. using-git-worktrees\n[Create isolated workspace]" [label="YES ⛔"];
+    "⛔ GATE: On main/master?" -> "7. executing-plans\n[Subagent - Sequential execution]" [label="NO ✅"];
+    "6. using-git-worktrees\n[Create isolated workspace]" -> "7. executing-plans\n[Subagent - Sequential execution]";
+
+    "7. executing-plans\n[Subagent - Sequential execution]" -> "8. requesting-code-review\n[Subagent]";
+    "8. requesting-code-review\n[Subagent]" -> "9. receiving-code-review";
+    "9. receiving-code-review" -> "7. executing-plans\n[Subagent - Sequential execution]" [label="issues → fix"];
+    "9. receiving-code-review" -> "10. finishing-a-development-branch" [label="passed"];
+    "10. finishing-a-development-branch" -> "11. Return to main window";
 }
 ```
 
@@ -136,11 +175,13 @@ digraph orchestrate_bugfix_workflow {
 
 | Scenario | Workflow | Execution Mode |
 |----------|----------|----------------|
-| New feature (complex) | feature | writing-plans → parallel-subagent-driven-development |
-| New feature (simple) | feature | writing-plans → subagent-driven-development |
-| Bug fix | bugfix | brainstorming → writing-plans → executing-plans |
+| New feature (complex) | feature | writing-plans → **GATE** → parallel-subagent-driven-development |
+| New feature (simple) | feature | writing-plans → **GATE** → subagent-driven-development |
+| Bug fix | bugfix | brainstorming → writing-plans → **GATE** → executing-plans |
 | Multi-subsystem project | feature (decomposed) | Separate plan per subsystem |
 | No subagent support | any | executing-plans |
+
+**Note:** **GATE** = Transition gate check (on main/master → create worktree first)
 
 ## Red Flags
 
@@ -148,10 +189,13 @@ digraph orchestrate_bugfix_workflow {
 - Skip brainstorming
 - Skip code review
 - Skip CR feedback handling
+- Skip the Planning → Execution transition gate
 - Start implementation on main/master branch without worktree isolation
+- Call execution skills directly without checking current branch
 
 **Always:**
 - Use orchestrate as single entry point
+- Check `git branch --show-current` before calling execution skills
+- Create worktree if on main/master before execution
 - Dispatch subagents for all implementation
 - Handle CR feedback before proceeding
-- Use worktree isolation before implementation
