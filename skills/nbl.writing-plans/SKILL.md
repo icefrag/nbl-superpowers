@@ -94,10 +94,6 @@ Each task MUST include dependency information for parallel execution planning:
 
 **Dependencies:** None | Task 1, Task 2
 **Parallelizable:** Yes | No (reason if No)
-**Files:**
-- Create: `exact/path/to/file.py`
-- Modify: `exact/path/to/existing.py:123-145`
-- Test: `tests/exact/path/to/test.py`
 
 - [ ] **Step 1: Write the failing test**
 
@@ -228,8 +224,38 @@ Add to plan document footer:
 **Execution Mode:** inline | serial | parallel
 ```
 
-### Return Value
+## Execution Handoff
 
-Return format: `{ mode: "inline" | "serial" | "parallel", plan_path: "docs/nbl/plans/..." }`
+After saving and self-reviewing the plan, analyze task dependencies to determine execution mode and automatically invoke the corresponding skill.
 
-The caller (nbl.brainstorming) handles skill dispatch based on the returned mode.
+### Mode Decision
+
+| Mode | Condition | Skill |
+|------|-----------|-------|
+| `inline` | Single task | `nbl.executing-plans` |
+| `serial` | Tasks form a chain (each depends on previous) | `nbl.subagent-driven-development` |
+| `parallel` | Multiple independent tasks exist | `nbl.parallel-subagent-driven-development` |
+
+### Handoff Actions
+
+**Inline mode:**
+- Invoke `nbl.executing-plans` skill
+- Execute single task in current session
+
+**Serial mode:**
+- Invoke `nbl.subagent-driven-development` skill
+- Fresh subagent per task with reviews between tasks
+
+**Parallel mode:**
+- Invoke `nbl.parallel-subagent-driven-development` skill
+- Parallel task execution based on dependency levels
+
+### Announcement Format
+
+After determining the mode:
+
+> "Plan complete and saved to `docs/nbl/plans/<filename>.md`.
+>
+> **Execution Mode:** inline | serial | parallel
+>
+> Invoking `<skill-name>` to execute the plan."
