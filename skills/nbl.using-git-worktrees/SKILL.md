@@ -13,6 +13,31 @@ Git worktrees create isolated workspaces sharing the same repository, allowing w
 
 **Announce at start:** "I'm using the using-git-worktrees skill to set up an isolated workspace."
 
+## Branch Naming Convention
+
+### Name Source Priority
+
+1. **Explicit parameter** - Caller provides `branch_name`
+2. **Plan file inference** - Extract from `docs/nbl/plans/YYYY-MM-DD-{name}.md`
+3. **Feature description** - Convert to kebab-case (e.g., "User Auth" → `user-auth`)
+
+### Naming Formats
+
+| Mode | Branch Name | Worktree Path |
+|------|-------------|---------------|
+| Single | `feature/{name}` | `.worktrees/{name}` |
+| Parallel | `feature/{name}-task{id}` | `.worktrees/{name}-task{id}` |
+
+### Examples
+
+```
+Plan file: docs/nbl/plans/2026-03-27-user-authentication.md
+  → Base name: user-authentication
+  → Single worktree:  .worktrees/user-authentication
+  → Parallel task 1:  .worktrees/user-authentication-task1
+  → Parallel task 3:  .worktrees/user-authentication-task3
+```
+
 ## Directory Selection Process
 
 Always use `.worktrees/` (project-local, hidden). This is the preferred convention.
@@ -54,18 +79,31 @@ No .gitignore verification needed - outside project entirely.
 
 ## Creation Steps
 
-### 1. Create Worktree
+### 1. Determine Branch Name
 
-```bash
-# Full path
-path=".worktrees/$BRANCH_NAME"
+```
+# Priority: explicit param > plan file > description
 
-# Create worktree with new branch
-git worktree add "$path" -b "$BRANCH_NAME"
-cd "$path"
+IF caller provides branch_name:
+    base_name = branch_name
+ELSE IF plan file exists (docs/nbl/plans/*.md):
+    base_name = extract name from filename (YYYY-MM-DD-{name}.md)
+ELSE:
+    base_name = kebab-case(feature description)
 ```
 
-### 2. Run Project Setup
+### 2. Create Worktree (Single Mode)
+
+```bash
+# Single worktree for sequential execution
+branch_name="feature/${base_name}"
+worktree_path=".worktrees/${base_name}"
+
+git worktree add "$worktree_path" -b "$branch_name"
+cd "$worktree_path"
+```
+
+### 3. Run Project Setup
 
 Auto-detect and run appropriate setup:
 
@@ -90,7 +128,7 @@ if [ -f pom.xml ]; then mvn dependency:go-offline -B; fi
 if [ -f build.gradle ] || [ -f build.gradle.kts ]; then gradle dependencies; fi
 ```
 
-### 3. Verify Clean Baseline
+### 4. Verify Clean Baseline
 
 Run tests to ensure worktree starts clean:
 
@@ -108,7 +146,7 @@ gradle test
 
 **If tests pass:** Report ready.
 
-### 4. Report Location
+### 5. Report Location
 
 ```
 Worktree ready at <full-path>
@@ -124,8 +162,13 @@ When executing parallel tasks, create and manage multiple worktrees.
 
 ```bash
 # For parallel tasks in a level
+# base_name determined from plan file or description
+
 for task_id in 1 3 5; do
-    git worktree add ".worktrees/${BRANCH}-task${task_id}" -b "${BRANCH}-task${task_id}"
+    branch_name="feature/${base_name}-task${task_id}"
+    worktree_path=".worktrees/${base_name}-task${task_id}"
+
+    git worktree add "$worktree_path" -b "$branch_name"
 done
 ```
 
@@ -135,22 +178,20 @@ After a task is merged to base branch (note: for parallel mode, cleanup happens 
 
 ```bash
 # Remove worktree
-git worktree remove ".worktrees/${BRANCH}-task${task_id}"
+git worktree remove ".worktrees/${base_name}-task${task_id}"
 # Delete branch
-git branch -d "${BRANCH}-task${task_id}"
+git branch -d "feature/${base_name}-task${task_id}"
 ```
 
-### Naming Convention (Parallel Mode)
+### Directory Structure Example
 
 ```
 .worktrees/
-├── feature-auth-task1/      # Task 1 worktree
-├── feature-logging-task3/   # Task 3 worktree
-├── feature-audit-task4/     # Task 4 worktree
-└── feature-main/            # Base branch (optional)
+├── user-authentication-task1/      # Task 1 worktree
+├── user-authentication-task3/      # Task 3 worktree
+├── user-authentication-task4/      # Task 4 worktree
+└── user-authentication/            # Single mode (optional)
 ```
-
-**Format:** `{branch-prefix}-{task-name}-{task-id}`
 
 ### Parallel Mode Integration
 
@@ -190,15 +231,18 @@ git branch -d "${BRANCH}-task${task_id}"
 ```
 You: I'm using the using-git-worktrees skill to set up an isolated workspace.
 
+[Plan file: docs/nbl/plans/2026-03-27-user-auth.md]
+[Extract base_name: user-auth]
 [Check .worktrees/ - exists]
 [Verify ignored - git check-ignore confirms .worktrees/ is ignored]
-[Create worktree: git worktree add .worktrees/auth -b feature/auth]
+[Create worktree: git worktree add .worktrees/user-auth -b feature/user-auth]
 [Run npm install]
 [Run npm test - 47 passing]
 
-Worktree ready at /Users/jesse/myproject/.worktrees/auth
+Worktree ready at /Users/jesse/myproject/.worktrees/user-auth
+Branch: feature/user-auth
 Tests passing (47 tests, 0 failures)
-Ready to implement auth feature
+Ready to implement user-auth feature
 ```
 
 ## Red Flags
