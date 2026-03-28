@@ -106,3 +106,12 @@ skills/
 ├── nbl.update-rules/                # 规则更新
 └── nbl.writing-skills/              # 编写skill
 ```
+
+## 本地开发参考
+
+本项目基于官方 superpowers 技能体系扩展开发，本地开发参考源码地址：
+
+```
+官方 superpowers 源码：D:\workspace\superpowers
+skills 目录：D:\workspace\superpowers\skills
+```
