@@ -80,13 +80,25 @@ ensure_git_repo() {
 # Gitignore 检查
 #-------------------------------------------------------------------------------
 
-# 确保 .worktrees/ 目录被 gitignore
+# 确保 .worktrees/ 和 docs/ 目录被 gitignore
 ensure_gitignore() {
+    local changed=false
+
     if ! git check-ignore -q .worktrees 2>/dev/null; then
         echo "ℹ️  .worktrees/ 未被 gitignore，正在添加..."
         echo ".worktrees/" >> .gitignore
+        changed=true
+    fi
+
+    if ! git check-ignore -q docs/ 2>/dev/null; then
+        echo "ℹ️  docs/ 未被 gitignore，正在添加..."
+        echo "docs/" >> .gitignore
+        changed=true
+    fi
+
+    if [ "$changed" = true ]; then
         git add .gitignore
-        git commit -m "chore: add .worktrees/ to gitignore" > /dev/null 2>&1 || true
+        git commit -m "chore: update .gitignore" > /dev/null 2>&1 || true
         echo "✅ .gitignore 已更新"
     fi
 }

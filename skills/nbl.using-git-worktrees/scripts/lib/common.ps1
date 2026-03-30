@@ -73,14 +73,25 @@ function Ensure-GitRepo {
 #-------------------------------------------------------------------------------
 
 function Ensure-Gitignore {
-    $ignored = git check-ignore .worktrees 2>$null
-    if (-not $ignored) {
+    $changed = $false
+
+    $ignoredWorktrees = git check-ignore .worktrees 2>$null
+    if (-not $ignoredWorktrees) {
         Write-Host "ℹ️  .worktrees/ 未被 gitignore，正在添加..."
-
         ".worktrees/" | Add-Content -Path ".gitignore" -Encoding UTF8
-        git add .gitignore
-        git commit -m "chore: add .worktrees/ to gitignore" 2>$null
+        $changed = $true
+    }
 
+    $ignoredDocs = git check-ignore docs/ 2>$null
+    if (-not $ignoredDocs) {
+        Write-Host "ℹ️  docs/ 未被 gitignore，正在添加..."
+        "docs/" | Add-Content -Path ".gitignore" -Encoding UTF8
+        $changed = $true
+    }
+
+    if ($changed) {
+        git add .gitignore
+        git commit -m "chore: update .gitignore" 2>$null
         Write-Host "✅ .gitignore 已更新"
     }
 }
