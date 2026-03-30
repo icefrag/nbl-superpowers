@@ -119,6 +119,7 @@ For each level:
     ├── Wait all tasks complete (implementer does built-in two-stage self-review)
     ├── Rebase each task branch to base branch
     ├── Merge all task branches to base branch
+    ├── Mark all completed tasks as done in TodoWrite and plan file
     └── Proceed to next level
 ```
 
