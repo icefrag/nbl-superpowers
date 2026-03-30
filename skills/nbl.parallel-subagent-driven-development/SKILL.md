@@ -131,6 +131,7 @@ For each level:
 | 3 | Code quality review | ✅ |
 | 4 | Rebase to base | ✅ |
 | 5 | Merge to base | ✅ |
+| 6 | Mark task complete in plan file (change `-[ ]` to `-[X]`) | ✅ |
 
 **Key rule:** Level completion = ALL tasks passed ALL steps.
 
@@ -328,7 +329,7 @@ digraph process {
 
     subgraph cluster_cleanup {
         label="After Level Complete";
-        "Mark level tasks complete" [shape=box];
+        "Mark level tasks complete (TodoWrite + Plan file)" [shape=box];
         "More levels?" [shape=diamond];
     }
 
@@ -358,8 +359,8 @@ digraph process {
     "More agents pending?" -> "Level complete" [label="no"];
 
     // Cleanup flow
-    "Level complete" -> "Mark level tasks complete";
-    "Mark level tasks complete" -> "More levels?";
+    "Level complete" -> "Mark level tasks complete (TodoWrite + Plan file)";
+    "Mark level tasks complete (TodoWrite + Plan file)" -> "More levels?";
     "More levels?" -> "Create worktrees for tasks in this level (max 5)" [label="yes - next level"];
     "More levels?" -> "Dispatch final code reviewer" [label="no"];
     "Dispatch final code reviewer" -> "Use nbl.finishing-a-development-branch";
