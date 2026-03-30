@@ -77,7 +77,8 @@ if ($LASTEXITCODE -eq 0) {
         $Message = "Reused existing worktree"
     } else {
         # 检查分支是否存在
-        $branchExists = git show-ref --verify --quiet "refs/heads/$BranchName" 2>$null
+        git show-ref --verify --quiet "refs/heads/$BranchName" 2>$null
+        $branchExists = ($LASTEXITCODE -eq 0)
         if ($branchExists) {
             # Case 2: 分支存在但目录不存在
             Write-Host "🔗 分支已存在，重新 attach worktree"
