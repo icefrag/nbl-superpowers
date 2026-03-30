@@ -59,12 +59,6 @@
 | **nbl.writing-skills** | 编写新skill | 创建/修改skill |
 | **nbl.test-driven-development** | 测试驱动开发 | 新功能、bugfix |
 
-## Agents
-
-| Agent | 描述 | 调用方式 |
-|-------|------|---------|
-| **nbl:code-reviewer** | 代码审查，检查实现是否符合计划和规范 | Agent tool |
-
 ## 工作流
 
 直接使用所需 skill：
@@ -85,9 +79,6 @@ code-review → finish
 ## 目录结构
 
 ```
-agents/
-└── code-reviewer.md          # 代码审查 agent
-
 skills/
 ├── nbl.brainstorming/               # 需求澄清
 ├── nbl.writing-plans/               # 详细计划
@@ -95,14 +86,15 @@ skills/
 ├── nbl.executing-plans/             # 主 agent 执行
 ├── nbl.subagent-driven-development/ # 子代理串行执行
 ├── nbl.parallel-subagent-driven-development/ # 子代理并行执行
-├── nbl.requesting-code-review/      # 请求CR
-├── nbl.receiving-code-review/       # 处理CR
-├── nbl.finishing-a-development-branch/ # 完成分支
-├── nbl.refactor-clean/              # 死代码清理
-├── nbl.test-coverage/               # 测试覆盖率
-├── nbl.tech-design/                 # 技术设计
-├── nbl.deep-research/               # 深度研究
-├── nbl.update-codemaps/             # 更新代码地图
-├── nbl.update-rules/                # 规则更新
-└── nbl.writing-skills/              # 编写skill
+├── nbl.requesting-code-review/      # 请求代码审查
+├── nbl.receiving-code-review/       # 处理代码审查反馈
+├── nbl.finishing-a-development-branch/ # 完成开发分支
+├── nbl.refactor-clean/              # Java Web 死代码清理和重构
+├── nbl.test-coverage/               # 测试覆盖率分析
+├── nbl.tech-design/                 # 根据需求生成技术设计文档
+├── nbl.deep-research/               # 多源深度网络研究
+├── nbl.update-codemaps/             # 生成项目 CLAUDE.md 文档
+├── nbl.update-rules/                # 管理更新规则文件
+├── nbl.writing-skills/              # 创建和修改技能
+└── nbl.test-driven-development/     # 测试驱动开发
 ```
