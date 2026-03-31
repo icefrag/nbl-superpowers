@@ -9,95 +9,89 @@ description: 一键安装自定义状态行脚本到 ~/.claude，显示模型、
 
 ## 安装
 
-执行以下 Bash 脚本完成安装：
+> **AI执行方式**：按步骤分步执行 Bash 脚本。遇到需要用户确认的场景，使用 AskUserQuestion 工具询问用户，不要在 Bash 中使用 read 命令。
+
+### 步骤 1：复制 statusline.sh 并检测配置状态
+
+将以下脚本作为Bash工具直接执行：
 
 ```bash
-# 检查 jq 是否可用
+# 检查 jq
 if ! command -v jq >/dev/null 2>&1; then
-  echo "错误: jq 未安装，请先安装 jq 后重试"
+  echo "错误: jq 未安装"
   echo "Windows (Git Bash): 通常已预装"
   echo "Ubuntu/Debian: sudo apt install jq"
   echo "macOS: brew install jq"
   exit 1
 fi
 
-# 获取脚本源路径
-SKILL_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
-SOURCE_FILE="$SKILL_DIR/statusline.sh"
+# 定位源文件：尝试多个可能的路径
+SOURCE_FILE=""
+for dir in \
+  "$HOME/.claude/plugins/marketplaces/nbl-dev/skills/nbl.status-line" \
+  "$(cd "$(dirname "${BASH_SOURCE[0]}")" 2>/dev/null && pwd)"; do
+  if [ -f "$dir/statusline.sh" ]; then
+    SOURCE_FILE="$dir/statusline.sh"
+    break
+  fi
+done
+
+if [ -z "$SOURCE_FILE" ]; then
+  echo "错误: 找不到 statusline.sh 源文件"
+  exit 1
+fi
+
 TARGET_DIR="$HOME/.claude"
 TARGET_FILE="$TARGET_DIR/statusline.sh"
-SETTINGS_FILE="$TARGET_DIR/settings.json"
-EXPECTED_CMD="~/.claude/statusline.sh"
 
-# 检查源文件存在
-if [ ! -f "$SOURCE_FILE" ]; then
-  echo "错误: 源文件 $SOURCE_FILE 不存在"
-  exit 1
-fi
-
-# 创建 ~/.claude 目录如果不存在
+# 复制文件
 mkdir -p "$TARGET_DIR"
-
-# 检查 settings.json 是否存在，不存在创建空对象
-if [ ! -f "$SETTINGS_FILE" ]; then
-  echo "{}" > "$SETTINGS_FILE"
-  echo "创建新的 settings.json: $SETTINGS_FILE"
-fi
-
-# 检查 settings.json 格式是否有效
-if ! jq . "$SETTINGS_FILE" >/dev/null 2>&1; then
-  echo "错误: settings.json JSON 格式无效，请修复后重试"
-  exit 1
-fi
-
-# 总是复制 statusline.sh 到 ~/.claude（覆盖已存在文件）
 cp -f "$SOURCE_FILE" "$TARGET_FILE"
 chmod +x "$TARGET_FILE"
-echo "已更新 statusline.sh 到 $TARGET_FILE"
+echo "已复制 statusline.sh"
 
-# 情况 1: 没有 statusLine 配置 → 需要添加
-if ! jq -e '.statusLine' "$SETTINGS_FILE" >/dev/null 2>&1; then
-  echo "未检测到 statusLine 配置，添加配置..."
-  TEMP_SETTINGS=$(mktemp)
-  jq '. + {
-    "statusLine": {
-      "type": "command",
-      "command": "~/.claude/statusline.sh"
-    }
-  }' "$SETTINGS_FILE" > "$TEMP_SETTINGS" && mv "$TEMP_SETTINGS" "$SETTINGS_FILE"
-  echo "已添加 statusLine 配置"
-  echo ""
-  echo "安装完成! 请重启 Claude Code 使状态行生效"
+# 检测配置状态并输出标记供 AI 判断
+SETTINGS_FILE="$TARGET_DIR/settings.json"
+if [ ! -f "$SETTINGS_FILE" ]; then
+  echo "::CONFIG_STATUS=no_settings"
   exit 0
 fi
 
-# 情况 2: 已有配置，获取当前 command
+if ! jq . "$SETTINGS_FILE" >/dev/null 2>&1; then
+  echo "错误: settings.json JSON 格式无效"
+  exit 1
+fi
+
 EXISTING_CMD=$(jq -r '.statusLine.command // ""' "$SETTINGS_FILE")
-
-# 情况 2a: 已有配置且路径正确 → 跳过配置更新
-if [ "$EXISTING_CMD" = "$EXPECTED_CMD" ]; then
-  echo ""
-  echo "状态: statusLine 配置已存在且路径正确，跳过配置更新"
+if [ -z "$EXISTING_CMD" ]; then
+  echo "::CONFIG_STATUS=no_statusline"
+elif [ "$EXISTING_CMD" = "~/.claude/statusline.sh" ]; then
+  echo "::CONFIG_STATUS=correct"
   echo "安装完成! statusline.sh 已更新，请重启 Claude Code 生效"
-  exit 0
+else
+  echo "::CONFIG_STATUS=different"
+  echo "当前配置路径: $EXISTING_CMD"
 fi
+```
 
-# 情况 2b: 已有配置但路径不同 → 询问用户
-echo ""
-echo "警告: 检测到已有 statusLine 配置，当前路径为: $EXISTING_CMD"
-echo "期望路径为: $EXPECTED_CMD"
-read -p "是否更新配置为期望路径? [y/N] " -n 1 -r
-echo
+### 步骤 2：根据配置状态决定下一步
 
-# 用户选择不更新 → 退出
-if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-  echo "状态: 用户选择保留原有配置，跳过配置更新"
-  echo "安装完成! statusline.sh 已更新，请重启 Claude Code 生效"
-  exit 0
-fi
+根据步骤 1 输出的 `::CONFIG_STATUS` 值：
 
-# 用户确认更新 → 更新配置
-echo "用户确认，更新配置..."
+| CONFIG_STATUS | AI 操作 |
+|---|---|
+| `no_settings` | 直接执行下方"更新配置"脚本（先创建 settings.json） |
+| `no_statusline` | 直接执行下方"更新配置"脚本 |
+| `correct` | 无需操作，安装完成 |
+| `different` | **使用 AskUserQuestion 询问用户**是否将配置路径更新为 `~/.claude/statusline.sh`，根据用户回答决定是否执行下方脚本 |
+
+### 更新配置脚本
+
+当需要写入 statusLine 配置时，执行：
+
+```bash
+SETTINGS_FILE="$HOME/.claude/settings.json"
+[ ! -f "$SETTINGS_FILE" ] && echo "{}" > "$SETTINGS_FILE"
 TEMP_SETTINGS=$(mktemp)
 jq '. + {
   "statusLine": {
@@ -105,9 +99,7 @@ jq '. + {
     "command": "~/.claude/statusline.sh"
   }
 }' "$SETTINGS_FILE" > "$TEMP_SETTINGS" && mv "$TEMP_SETTINGS" "$SETTINGS_FILE"
-
 echo "已更新 statusLine 配置"
-echo ""
 echo "安装完成! 请重启 Claude Code 使状态行生效"
 ```
 
