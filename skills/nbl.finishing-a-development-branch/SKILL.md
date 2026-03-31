@@ -84,11 +84,40 @@ git merge --ff-only feature/<name>-merge
 ### Step 3: Determine Base Branch
 
 ```bash
-# Try common base branches
-git merge-base HEAD main 2>/dev/null || git merge-base HEAD master 2>/dev/null
+# Get current branch
+CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
+
+# If current branch is already a feature/dev branch (not main/master), check what it split from
+# Common case: development from feature-xxx to feature-xxx-taskxxx
+if [[ "$CURRENT_BRANCH" != "main" && "$CURRENT_BRANCH" != "master" ]]; then
+  # Try to find the nearest ancestor branch that exists locally
+  for target_branch in $(git branch --format="%(refname:short)"); do
+    if [[ "$target_branch" != "$CURRENT_BRANCH" && "$target_branch" != "main" && "$target_branch" != "master" ]]; then
+      if git merge-base --is-ancestor $(git merge-base HEAD "$target_branch") HEAD; then
+        FOUND_BASE=$target_branch
+        break
+      fi
+    fi
+  done
+  if [[ -n "$FOUND_BASE" ]]; then
+    BASE_BRANCH=$FOUND_BASE
+  else
+    BASE_BRANCH=$(git merge-base HEAD main 2>/dev/null || git merge-base HEAD master 2>/dev/null)
+    if [[ -n "$BASE_BRANCH" ]]; then
+      BASE_BRANCH="main"
+    else
+      BASE_BRANCH="master"
+    fi
+  fi
+else
+  BASE_BRANCH=$CURRENT_BRANCH
+fi
 ```
 
-Or ask: "This branch split from main - is that correct?"
+**Logic:**
+1. If current branch is already a feature branch (not main/master) → try to find the nearest ancestor feature branch as base
+2. Falls back to main/master if no ancestor found
+3. Ask user to confirm: "This branch split from `<base-branch>` - is that correct?"
 
 ### Step 4: Present Options
 

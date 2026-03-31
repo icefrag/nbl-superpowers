@@ -13,6 +13,16 @@ Git worktrees create isolated workspaces sharing the same repository, allowing w
 
 **Announce at start:** "I'm using the using-git-worktrees skill to set up an isolated workspace."
 
+## Invocation
+
+Invoke via skill command:
+
+| Operation | Command |
+|-----------|---------|
+| Create | `/nbl.superpowers:nbl.using-git-worktrees create <base_name> [task_id]` |
+| Cleanup | `/nbl.superpowers:nbl.using-git-worktrees cleanup <base_name> [task_id] [--force]` |
+| Sub-to-sub Merge (parallel mode) | `/nbl.superpowers:nbl.using-git-worktrees merge-sub <base_name> <task_id>` |
+
 ## Branch Naming Convention
 
 ### Name Source Priority
@@ -34,27 +44,15 @@ Git worktrees create isolated workspaces sharing the same repository, allowing w
 ### Single Worktree (Sequential Mode)
 
 ```bash
-# Detect platform and run appropriate script
-if [[ -n "${COMSPEC:-}" ]]; then
-    # PowerShell (Windows native)
-    ./skills/nbl.using-git-worktrees/scripts/create-worktree.ps1 <base_name>
-else
-    # Bash (Linux/macOS/Git-Bash)
-    ./skills/nbl.using-git-worktrees/scripts/create-worktree.sh <base_name>
-fi
+./skills/nbl.using-git-worktrees/scripts/create-worktree.sh <base_name>
 ```
 
 ### Merge Worktree (Parallel Mode Intermediate Buffer)
 
-**Same usage as Single Worktree** - just use base name ending with `-merge`. Existing scripts already support this pattern, no changes needed.
+**Same usage as Single Worktree** - just use base name ending with `-merge`.
 
 ```bash
-# For merge worktree in parallel mode
-if [[ -n "${COMSPEC:-}" ]]; then
-    ./skills/nbl.using-git-worktrees/scripts/create-worktree.ps1 "<name>-merge"
-else
-    ./skills/nbl.using-git-worktrees/scripts/create-worktree.sh "<name>-merge"
-fi
+./skills/nbl.using-git-worktrees/scripts/create-worktree.sh "<name>-merge"
 ```
 
 ### Parallel Worktree (Parallel Mode Tasks)
@@ -87,13 +85,25 @@ for task_id in 1 2 3; do
 done
 ```
 
+## Sub-to-Sub Merge (Parallel Mode)
+
+**用于并行模式下任务完成后将任务分支合并回merge工作树**：
+
+```bash
+# All-in-one: rebase task -> merge to merge branch -> cleanup task worktree
+./skills/nbl.using-git-worktrees/scripts/sub-to-sub-merge.sh <base_name> <task_id>
+```
+
+**必须在merge工作树中执行** - merge分支已经在此检出，不能在主工作区执行。
+
 ## Script Reference
 
 | Script | Purpose | Key Features |
 |--------|---------|--------------|
-| `scripts/create-worktree.sh/ps1` | Create/reuse worktree | Auto git init, gitignore check, smart recovery |
-| `scripts/cleanup-worktree.sh/ps1` | Remove worktree | Unmerged commit check, --force option |
-| `scripts/lib/common.sh/ps1` | Shared utilities | JSON output, naming helpers |
+| `scripts/create-worktree.sh` | Create/reuse worktree | Auto git init, gitignore check, smart recovery |
+| `scripts/cleanup-worktree.sh` | Remove worktree | Unmerged commit check, --force option |
+| `scripts/sub-to-sub-merge.sh` | Sub-to-sub merge | Rebase + merge + cleanup in one step |
+| `scripts/lib/common.sh` | Shared utilities | JSON output, naming helpers |
 
 ## Integration
 

@@ -229,14 +229,9 @@ digraph pipeline_flow {
 For each completed agent:
 
 1. **Implementer completes:** implement → spec self-check → fix → quality self-check → fix → DONE
-2. **Rebase + Merge + Cleanup** - Use the shared script (recommended):
-   ```bash
-   # All in one step: rebase, merge to merge worktree, and cleanup
-   if [[ -n "${COMSPEC:-}" ]]; then
-     ./skills/nbl.using-git-worktrees/scripts/sub-to-sub-merge.ps1 "$base_name" "$task_id"
-   else
-     ./skills/nbl.using-git-worktrees/scripts/sub-to-sub-merge.sh "$base_name" "$task_id"
-   fi
+2. **Rebase + Merge + Cleanup** - Invoke `nbl.using-git-worktrees` skill:
+   ```
+   /nbl.superpowers:nbl.using-git-worktrees merge-sub <base_name> <task_id>
    ```
    > ⚠️ **NON-NEGOTIABLE**: The merge **must** happen inside the merge worktree. The merge branch is already checked out there — do NOT attempt `git checkout $merge_branch` in the main workspace (Git forbids checking out the same branch in two worktrees simultaneously).
 
