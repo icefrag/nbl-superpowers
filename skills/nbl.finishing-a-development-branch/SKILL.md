@@ -1,14 +1,15 @@
 ---
 name: nbl.finishing-a-development-branch
-description: Use when implementation is complete, all tests pass, and you need to cleanup worktrees - completes development work with unified automatic flow
+description: Use when implementation is complete, all tests pass, and you need to decide how to integrate the work - guides completion of development work by presenting structured options for merge, PR, or cleanup
 ---
 
 # Finishing a Development Branch
 
 ## Overview
 
-Guide completion of development work by following the unified automatic flow:
-**Core principle:** Verify tests → Cleanup. All done automatically.
+Guide completion of development work by presenting clear options and handling chosen workflow.
+
+**Core principle:** Verify tests → Present options → Execute choice → Clean up.
 
 **Announce at start:** "I'm using the finishing-a-development-branch skill to complete this work."
 
@@ -16,7 +17,7 @@ Guide completion of development work by following the unified automatic flow:
 
 ### Step 1: Verify Tests
 
-**Before cleanup, verify tests pass:**
+**Before presenting options, verify tests pass:**
 
 ```bash
 # Run project's test suite
@@ -29,106 +30,172 @@ Tests failing (<N> failures). Must fix before completing:
 
 [Show failures]
 
-Cannot proceed with cleanup until tests pass.
+Cannot proceed with merge/PR until tests pass.
 ```
 
-Stop. Don't proceed to cleanup.
+Stop. Don't proceed to Step 2.
 
 **If tests pass:** Continue to Step 2.
 
-### Step 2: Get Base Branch
+### Step 2: Determine Base Branch
 
 ```bash
-# Base branch is current branch (we are already here)
-base_branch=$(git branch --show-current)
+# Try common base branches
+git merge-base HEAD main 2>/dev/null || git merge-base HEAD master 2>/dev/null
 ```
 
-### Step 3: Cleanup Worktrees
+Or ask: "This branch split from main - is that correct?"
 
-#### Single worktree cleanup (for serial mode)
+### Step 3: Present Options
 
-If there is a top-level worktree in `.worktrees/`:
-```bash
-# Get the worktree path and branch name
-worktree_path=$(find .worktrees -type d | head -1)
-feature_branch=$(git -C "$worktree_path" rev-parse --abbrev-ref HEAD 2>/dev/null)
+Present exactly these 4 options:
 
-if [ -n "$feature_branch" ]; then
-  # Strip feature/ prefix to get base_name (cleanup-script adds prefix again)
-  base_name=$(echo "$feature_branch" | sed 's/^feature\///')
-  # Cleanup using existing script
-  if [[ "$OSTYPE" == "win32" ]] || [[ -n "${PSModulePath:-}" ]]; then
-    ./skills/nbl.using-git-worktrees/scripts/cleanup-worktree.ps1 "$base_name" --force
-  else
-    ./skills/nbl.using-git-worktrees/scripts/cleanup-worktree.sh "$base_name" --force
-  fi
+```
+Implementation complete. What would you like to do?
 
-  # Delete feature branch if it was created from main/master and already merged
-  if [[ "$base_branch" == "main" || "$base_branch" == "master" ]]; then
-    git branch -d "$feature_branch" 2>/dev/null || git branch -D "$feature_branch" 2>/dev/null || true
-  fi
-fi
+1. Merge back to <base-branch> locally
+2. Push and create a Pull Request
+3. Keep the branch as-is (I'll handle it later)
+4. Discard this work
+
+Which option?
 ```
 
-#### Batch cleanup for parallel tasks
+**Don't add explanation** - keep options concise.
 
-Cleanup any residual parallel task worktrees in `.worktrees/`:
+### Step 4: Execute Choice
+
+#### Option 1: Merge Locally
 
 ```bash
-if [ -d ".worktrees" ] && [ "$(ls -A .worktrees)" ]; then
-  echo "Cleaning up parallel task worktrees..."
-  for wt_path in .worktrees/*/; do
-    [ -d "$wt_path" ] || continue
-    # Get base_name from directory name
-    base_name=$(basename "$wt_path")
-    # Check if it's a parallel task (has -taskN suffix)
-    if [[ "$base_name" =~ -task[0-9]+$ ]]; then
-      # Extract task_id from name (everything after last -task)
-      task_id=$(echo "$base_name" | sed -E 's/.*-task//')
-      # Use cleanup script for consistent behavior
-      if [[ "$OSTYPE" == "win32" ]] || [[ -n "${PSModulePath:-}" ]]; then
-        ./skills/nbl.using-git-worktrees/scripts/cleanup-worktree.ps1 "$base_name" "$task_id" --force
-      else
-        ./skills/nbl.using-git-worktrees/scripts/cleanup-worktree.sh "$base_name" "$task_id" --force
-      fi
-    fi
-  done
-fi
+# Switch to base branch
+git checkout <base-branch>
+
+# Pull latest
+git pull
+
+# Merge feature branch
+git merge <feature-branch>
+
+# Verify tests on merged result
+<test command>
+
+# If tests pass
+git branch -d <feature-branch>
 ```
 
-### Step 4: Report Completion
+Then: Cleanup worktree (Step 5)
 
+#### Option 2: Push and Create PR
+
+```bash
+# Push branch
+git push -u origin <feature-branch>
+
+# Create PR
+gh pr create --title "<title>" --body "$(cat <<'EOF'
+## Summary
+<2-3 bullets of what changed>
+
+## Test Plan
+- [ ] <verification steps>
+EOF
+)"
 ```
-✓ Development complete! All changes are on '$base_branch'.
-Worktrees cleaned up.
+
+Then: Cleanup worktree (Step 5)
+
+#### Option 3: Keep As-Is
+
+Report: "Keeping branch <name>. Worktree preserved at <path>."
+
+**Don't cleanup worktree.**
+
+#### Option 4: Discard
+
+**Confirm first:**
 ```
+This will permanently delete:
+- Branch <name>
+- All commits: <commit-list>
+- Worktree at <path>
+
+Type 'discard' to confirm.
+```
+
+Wait for exact confirmation.
+
+If confirmed:
+```bash
+git checkout <base-branch>
+git branch -D <feature-branch>
+```
+
+Then: Cleanup worktree (Step 5)
+
+### Step 5: Cleanup Worktree
+
+**For Options 1, 2, 4:**
+
+Check if in worktree:
+```bash
+git worktree list | grep $(git branch --show-current)
+```
+
+If yes:
+```bash
+git worktree remove <worktree-path>
+```
+
+**For Option 3:** Keep worktree.
+
+## Quick Reference
+
+| Option | Merge | Push | Keep Worktree | Cleanup Branch |
+|--------|-------|------|---------------|----------------|
+| 1. Merge locally | ✓ | - | - | ✓ |
+| 2. Create PR | - | ✓ | ✓ | - |
+| 3. Keep as-is | - | - | ✓ | - |
+| 4. Discard | - | - | - | ✓ (force) |
 
 ## Common Mistakes
 
 **Skipping test verification**
-- **Problem:** Cleanup with failing tests leaves broken code merged
-- **Fix:** Always verify tests before cleanup
+- **Problem:** Merge broken code, create failing PR
+- **Fix:** Always verify tests before offering options
 
-**Redundant worktree cleanup**
-- **Problem:** Trying to clean up worktree that was already removed
-- **Fix:** Always check existence before cleanup, ignore cleanup failures
+**Open-ended questions**
+- **Problem:** "What should I do next?" → ambiguous
+- **Fix:** Present exactly 4 structured options
+
+**Automatic worktree cleanup**
+- **Problem:** Remove worktree when might need it (Option 2, 3)
+- **Fix:** Only cleanup for Options 1 and 4
+
+**No confirmation for discard**
+- **Problem:** Accidentally delete work
+- **Fix:** Require typed "discard" confirmation
 
 ## Red Flags
 
 **Never:**
 - Proceed with failing tests
-- Cleanup before merge is complete
+- Merge without verifying tests on result
+- Delete work without confirmation
+- Force-push without explicit request
 
 **Always:**
-- Verify tests before cleanup
-- Cleanup any worktree that has been merged
+- Verify tests before offering options
+- Present exactly 4 options
+- Get typed confirmation for Option 4
+- Clean up worktree for Options 1 & 4 only
 
 ## Integration
 
 **Called by:**
-- **subagent-driven-development** - After all tasks complete and merged
-- **parallel-subagent-driven-development** - After all tasks complete and merged
-- **executing-plans** - After all batches complete
+- **nbl.subagent-driven-development** - After all tasks complete
+- **nbl.executing-plans** - After all batches complete
+- **nbl.parallel-subagent-driven-development** - After all tasks complete
 
 **Pairs with:**
-- **using-git-worktrees** - Creates worktrees before development
+- **nbl.using-git-worktrees** - Cleans up worktree created by that skill
