@@ -46,6 +46,119 @@ git merge-base HEAD main 2>/dev/null || git merge-base HEAD master 2>/dev/null
 
 Or ask: "This branch split from main - is that correct?"
 
+### Step 2.5: Check execution mode
+
+If called with `mode=serial` or `mode=parallel`:
+  - Skip user interaction → Go directly to **Automatic Completion** below
+
+If called with `mode=interactive` or no mode specified:
+  - Continue to Step 3 → **Present Options** to user
+
+---
+
+## Automatic Completion
+
+### For mode=serial (Single top-level worktree from nbl.subagent-driven-development)
+
+After all tasks complete in the worktree:
+
+1. **Verify tests pass** (same as Step 1)
+   - If tests fail → Stop, cannot proceed
+
+2. **Get branch information**
+   ```bash
+   # Current branch in main workspace is the base branch (we came from here)
+   base_branch=$(git branch --show-current)
+   # The worktree branch is the development branch we created
+   # The worktree is at .worktrees/<name>
+   worktree_path=$(find .worktrees -type d | head -1)
+   feature_branch=$(git -C "$worktree_path" rev-parse --abbrev-ref HEAD 2>/dev/null)
+   ```
+
+3. **Merge changes to base branch**
+   ```bash
+   # Check if worktree has uncommitted changes
+   if [ -n "$(git -C "$worktree_path" status --porcelain)" ]; then
+     git -C "$worktree_path" add .
+     git -C "$worktree_path" commit -m "chore: auto-commit remaining changes [skip ci]"
+   fi
+
+   # Fast-forward merge to base branch
+   git checkout "$base_branch"
+   git merge --ff-only "$feature_branch"
+   ```
+
+4. **Verify tests after merge** (rerun test suite)
+   - If tests fail → abort merge, report failure
+
+5. **Cleanup worktree** using existing cleanup script:
+   ```bash
+   # Detect platform and run appropriate cleanup script
+   if [[ "$OSTYPE" == "win32" ]] || [[ -n "${PSModulePath:-}" ]]; then
+     ./skills/nbl.using-git-worktrees/scripts/cleanup-worktree.ps1 "$feature_branch" --force
+   else
+     ./skills/nbl.using-git-worktrees/scripts/cleanup-worktree.sh "$feature_branch" --force
+   fi
+   ```
+
+6. **Delete feature branch if it was created from main/master**
+   ```bash
+   # If base_branch is main or master, we created feature_branch automatically at start
+   # If base_branch is already a feature branch, keep it
+   if [[ "$base_branch" == "main" || "$base_branch" == "master" ]]; then
+     # feature branch already merged, safe to delete
+     git branch -d "$feature_branch"
+   fi
+   ```
+
+7. **Report completion**
+   ```
+   ✓ Development complete! All changes automatically merged to '$base_branch'.
+   Worktree cleaned up.
+   ```
+
+---
+
+### For mode=parallel (nbl.parallel-subagent-driven-development)
+
+All task changes have already been merged to base branch during execution. Only need to cleanup residual worktrees:
+
+1. **Verify tests pass** (same as Step 1)
+   - If tests fail → Stop, cannot proceed
+
+2. **Cleanup residual parallel worktrees** (reuse existing batch cleanup from Step 6):
+
+```bash
+# Cleanup code from Step 6, reused here for automatic completion
+if [ -d ".worktrees" ] && [ "$(ls -A .worktrees)" ]; then
+  echo "Cleaning up parallel task worktrees..."
+  base_branch=$(git branch --show-current)
+  for wt_path in .worktrees/*/; do
+    [ -d "$wt_path" ] || continue
+    worktree_branch=$(git -C "$wt_path" rev-parse --abbrev-ref HEAD 2>/dev/null)
+    if [ -n "$worktree_branch" ]; then
+      if git merge-base --is-ancestor "$worktree_branch" "$base_branch" 2>/dev/null; then
+        if [ -d "$wt_path" ]; then
+          echo "Removing merged worktree: $wt_path (branch: $worktree_branch)"
+          git worktree remove --force "$wt_path" 2>/dev/null || true
+        fi
+        git branch -d "$worktree_branch" 2>/dev/null || git branch -D "$worktree_branch" 2>/dev/null || true
+      else
+        echo "Skipping: $worktree_branch not yet merged to $base_branch"
+      fi
+    fi
+  done
+fi
+```
+
+3. **Report completion**
+   ```
+   ✓ Development complete! All tasks automatically merged to '$base_branch'.
+   Residual worktrees cleaned up.
+   ```
+
+---
+
 ### Step 3: Present Options
 
 Present exactly these 4 options:
