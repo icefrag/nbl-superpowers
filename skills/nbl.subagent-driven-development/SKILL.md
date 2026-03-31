@@ -135,9 +135,9 @@ Use the least powerful model that can handle each role to conserve cost and incr
 
 Implementer subagents report one of four statuses. Handle each appropriately:
 
-**DONE:** Implementer completed the work **and** passed built-in two-stage self-review with all issues fixed. Mark task complete and proceed to next task.
+**DONE:** Implementer completed the work **and** passed built-in two-stage self-review with all issues fixed. **Mark task complete in both TodoWrite and the plan file (update the checkbox from `[ ]` to `[x]`)**, then proceed to next task.
 
-**DONE_WITH_CONCERNS:** The implementer completed the work but flagged doubts. Read the concerns before proceeding. If the concerns are about correctness or scope, address them before moving on. If they're observations (e.g., "this file is getting large"), note them and mark task complete.
+**DONE_WITH_CONCERNS:** The implementer completed the work but flagged doubts. Read the concerns before proceeding. If the concerns are about correctness or scope, address them before moving on. If they're observations (e.g., "this file is getting large"), note them and **mark task complete in both TodoWrite and the plan file**.
 
 **NEEDS_CONTEXT:** The implementer needs information that wasn't provided. Provide the missing context and re-dispatch.
 
