@@ -91,15 +91,26 @@ else
         MESSAGE="Reused existing worktree"
     elif git show-ref --verify --quiet "refs/heads/$BRANCH_NAME"; then
         # Case 2: 分支存在但目录不存在 → 重新 attach
-        echo "🔗 分支已存在，重新 attach worktree"
+        echo "🔗 分支已存在，尝试 attach worktree"
         if git worktree add "$WORKTREE_PATH" "$BRANCH_NAME"; then
             echo "✅ Re-attach 成功"
             IS_NEW=false
             MESSAGE="Re-attached existing worktree"
         else
-            echo "❌ 重新 attach 失败"
-            [ -n "$OUTPUT_FILE" ] && output_error_json "$OUTPUT_FILE" "Failed to re-attach existing worktree"
-            exit 1
+            # Case 2a: 重新 attach 失败 → 分支已被其他 worktree 占用（主工作区）
+            # 自动创建新分支 BRANCH_NAME-worktree 从原分支分叉
+            echo "⚠️  分支已被占用，自动创建新分支: ${BRANCH_NAME}-worktree"
+            NEW_BRANCH="${BRANCH_NAME}-worktree"
+            if git worktree add "$WORKTREE_PATH" -b "$NEW_BRANCH" "$BRANCH_NAME"; then
+                echo "✅ 新建 worktree 成功 (从 ${BRANCH_NAME} 分叉)"
+                IS_NEW=true
+                MESSAGE="Created new worktree from existing branch (forked)"
+                BRANCH_NAME="$NEW_BRANCH"
+            else
+                echo "❌ 创建分叉分支失败"
+                [ -n "$OUTPUT_FILE" ] && output_error_json "$OUTPUT_FILE" "Failed to create forked branch ${NEW_BRANCH} from ${BRANCH_NAME}"
+                exit 1
+            fi
         fi
     else
         # Case 3: 其他错误

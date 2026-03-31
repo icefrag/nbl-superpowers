@@ -84,18 +84,30 @@ if ($LASTEXITCODE -eq 0) {
         $branchExists = ($LASTEXITCODE -eq 0)
         if ($branchExists) {
             # Case 2: 分支存在但目录不存在
-            Write-Host "🔗 分支已存在，重新 attach worktree"
+            Write-Host "🔗 分支已存在，尝试 attach worktree"
             $attachResult = git worktree add $WorktreePath $BranchName 2>&1
             if ($LASTEXITCODE -eq 0) {
                 Write-Host "✅ Re-attach 成功"
                 $IsNew = $false
                 $Message = "Re-attached existing worktree"
             } else {
-                Write-Host "❌ 重新 attach 失败"
-                if ($OutputFile) {
-                    Output-ErrorJson -File $OutputFile -Error "Failed to re-attach existing worktree"
+                # Case 2a: 重新 attach 失败 → 分支已被其他 worktree 占用（主工作区）
+                # 自动创建新分支 BranchName-worktree 从原分支分叉
+                $newBranch = "$BranchName-worktree"
+                Write-Host "⚠️  分支已被占用，自动创建新分支: $newBranch"
+                $forkResult = git worktree add $WorktreePath -b $newBranch $BranchName 2>&1
+                if ($LASTEXITCODE -eq 0) {
+                    Write-Host "✅ 新建 worktree 成功 (从 $BranchName 分叉)"
+                    $IsNew = $true
+                    $Message = "Created new worktree from existing branch (forked)"
+                    $BranchName = $newBranch
+                } else {
+                    Write-Host "❌ 创建分叉分支失败"
+                    if ($OutputFile) {
+                        Output-ErrorJson -File $OutputFile -Error "Failed to create forked branch $newBranch from $BranchName"
+                    }
+                    exit 1
                 }
-                exit 1
             }
         } else {
             # Case 3: 其他错误
