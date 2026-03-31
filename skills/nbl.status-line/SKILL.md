@@ -27,6 +27,7 @@ SOURCE_FILE="$SKILL_DIR/statusline.sh"
 TARGET_DIR="$HOME/.claude"
 TARGET_FILE="$TARGET_DIR/statusline.sh"
 SETTINGS_FILE="$TARGET_DIR/settings.json"
+EXPECTED_CMD="~/.claude/statusline.sh"
 
 # 检查源文件存在
 if [ ! -f "$SOURCE_FILE" ]; then
@@ -49,19 +50,54 @@ if ! jq . "$SETTINGS_FILE" >/dev/null 2>&1; then
   exit 1
 fi
 
-# 检查是否已有 statusLine 配置
-if jq -e '.statusLine' "$SETTINGS_FILE" >/dev/null 2>&1; then
-  echo "提示: statusLine 配置已存在于 $SETTINGS_FILE，跳过安装"
-  echo "如需重新安装，请手动删除 statusLine 配置后重试"
+# 总是复制 statusline.sh 到 ~/.claude（覆盖已存在文件）
+cp -f "$SOURCE_FILE" "$TARGET_FILE"
+chmod +x "$TARGET_FILE"
+echo "已更新 statusline.sh 到 $TARGET_FILE"
+
+# 情况 1: 没有 statusLine 配置 → 需要添加
+if ! jq -e '.statusLine' "$SETTINGS_FILE" >/dev/null 2>&1; then
+  echo "未检测到 statusLine 配置，添加配置..."
+  TEMP_SETTINGS=$(mktemp)
+  jq '. + {
+    "statusLine": {
+      "type": "command",
+      "command": "~/.claude/statusline.sh"
+    }
+  }' "$SETTINGS_FILE" > "$TEMP_SETTINGS" && mv "$TEMP_SETTINGS" "$SETTINGS_FILE"
+  echo "已添加 statusLine 配置"
+  echo ""
+  echo "安装完成! 请重启 Claude Code 使状态行生效"
   exit 0
 fi
 
-# 复制 statusline.sh 到 ~/.claude (覆盖已存在文件)
-cp -f "$SOURCE_FILE" "$TARGET_FILE"
-chmod +x "$TARGET_FILE"
-echo "已复制 statusline.sh 到 $TARGET_FILE"
+# 情况 2: 已有配置，获取当前 command
+EXISTING_CMD=$(jq -r '.statusLine.command // ""' "$SETTINGS_FILE")
 
-# 添加 statusLine 配置
+# 情况 2a: 已有配置且路径正确 → 跳过配置更新
+if [ "$EXISTING_CMD" = "$EXPECTED_CMD" ]; then
+  echo ""
+  echo "状态: statusLine 配置已存在且路径正确，跳过配置更新"
+  echo "安装完成! statusline.sh 已更新，请重启 Claude Code 生效"
+  exit 0
+fi
+
+# 情况 2b: 已有配置但路径不同 → 询问用户
+echo ""
+echo "警告: 检测到已有 statusLine 配置，当前路径为: $EXISTING_CMD"
+echo "期望路径为: $EXPECTED_CMD"
+read -p "是否更新配置为期望路径? [y/N] " -n 1 -r
+echo
+
+# 用户选择不更新 → 退出
+if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+  echo "状态: 用户选择保留原有配置，跳过配置更新"
+  echo "安装完成! statusline.sh 已更新，请重启 Claude Code 生效"
+  exit 0
+fi
+
+# 用户确认更新 → 更新配置
+echo "用户确认，更新配置..."
 TEMP_SETTINGS=$(mktemp)
 jq '. + {
   "statusLine": {
@@ -70,7 +106,7 @@ jq '. + {
   }
 }' "$SETTINGS_FILE" > "$TEMP_SETTINGS" && mv "$TEMP_SETTINGS" "$SETTINGS_FILE"
 
-echo "已在 settings.json 中添加 statusLine 配置"
+echo "已更新 statusLine 配置"
 echo ""
 echo "安装完成! 请重启 Claude Code 使状态行生效"
 ```
