@@ -86,6 +86,27 @@ Each implementer MUST complete this before reporting DONE:
 
 **This is NON-NEGOTIABLE.** Each task must pass both stages of self-review before it can be merged.
 
+### 4. Merge Worktree Lifecycle (MANDATORY)
+
+```
+- One merge worktree is created at startup from development branch
+- ALL task merges go to the merge worktree's merge branch
+- The merge worktree MUST remain intact until ALL levels complete
+- After all levels complete, nbl.finishing-a-development-branch handles final merge to development branch and cleanup
+```
+
+**Never:** Delete the merge worktree before all levels complete. This breaks the entire flow.
+
+### 5. Directory Safety (MANDATORY)
+
+```
+- After any 'cd' into a worktree, always 'cd' back to project root before next command
+- Prefer using the shared sub-to-sub-merge script for complete merge + cleanup in one step
+- Never leave the current working directory inside a worktree between Bash commands
+```
+
+Bash tool preserves working directory between invocations. Getting lost in nested directories breaks all relative path lookups.
+
 </NON_NEGOTIABLE>
 
 ## Level-Based Execution
@@ -124,8 +145,8 @@ For each level:
     ├── Create worktrees for tasks in this level (max 5 per batch)
     ├── Dispatch agents in parallel
     ├── Wait all tasks complete (implementer does built-in two-stage self-review)
-    ├── Rebase each task branch to base branch
-    ├── Merge all task branches to base branch
+    ├── Rebase each task branch to merge branch
+    ├── Merge all task branches to merge branch
     ├── Mark all completed tasks as done in TodoWrite and plan file
     └── Proceed to next level
 ```
@@ -137,8 +158,8 @@ For each level:
 | Step | Description | Must Pass? |
 |------|-------------|------------|
 | 1 | Implementer reports DONE (with built-in self-review passed) | ✅ |
-| 2 | Rebase to base | ✅ |
-| 3 | Merge to base | ✅ |
+| 2 | Rebase to merge branch | ✅ |
+| 3 | Merge to merge branch | ✅ |
 | 4 | Mark task statuses complete in plan file | ✅ |
 
 **Key rule:** Level completion = ALL tasks passed ALL steps.
@@ -202,20 +223,18 @@ digraph pipeline_flow {
 For each completed agent:
 
 1. **Implementer completes:** implement → spec self-check → fix → quality self-check → fix → DONE
-2. **Rebase** (in task worktree, on task branch) - `git rebase $merge_branch` (where `$merge_branch` = `feature/{name}-merge`)
-3. **Merge** (in main workspace, on merge branch) - `git checkout $merge_branch && git merge --ff-only $task_branch`
-4. **Cleanup worktree** - Remove the task worktree immediately
+2. **Rebase + Merge + Cleanup** - Use the shared script (recommended):
    ```bash
-   # Cleanup worktree using shared script
-   base_name=$(basename "$worktree_path")
-   task_id=$(echo "$base_name" | sed -E 's/.*-task//')
-   if [[ "$OSTYPE" == "win32" ]] || [[ -n "${PSModulePath:-}" ]]; then
-     ./skills/nbl.using-git-worktrees/scripts/cleanup-worktree.ps1 "$base_name" "$task_id" --force
+   # All in one step: rebase, merge to merge worktree, and cleanup
+   if [[ -n "${COMSPEC:-}" ]]; then
+     ./skills/nbl.using-git-worktrees/scripts/sub-to-sub-merge.ps1 "$base_name" "$task_id"
    else
-     ./skills/nbl.using-git-worktrees/scripts/cleanup-worktree.sh "$base_name" "$task_id" --force
+     ./skills/nbl.using-git-worktrees/scripts/sub-to-sub-merge.sh "$base_name" "$task_id"
    fi
    ```
-5. **Keep branch** - Branch deletion is handled by `finishing-a-development-branch` after all tasks complete
+   > ⚠️ **NON-NEGOTIABLE**: The merge **must** happen inside the merge worktree. The merge branch is already checked out there — do NOT attempt `git checkout $merge_branch` in the main workspace (Git forbids checking out the same branch in two worktrees simultaneously).
+
+3. **Keep branch** - Branch deletion is handled by `finishing-a-development-branch` after all tasks complete
 
 ### Failure Handling
 
@@ -230,7 +249,7 @@ For each completed agent:
 
 ## Rebase Conflict Resolution
 
-When `git rebase $base_branch` encounters conflicts, use the following process:
+When `git rebase $merge_branch` encounters conflicts, use the following process:
 
 ### Why LLM for Conflicts?
 

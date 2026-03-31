@@ -35,7 +35,7 @@ Git worktrees create isolated workspaces sharing the same repository, allowing w
 
 ```bash
 # Detect platform and run appropriate script
-if [[ "$OSTYPE" == "win32" ]] || [[ -n "${PSModulePath:-}" ]]; then
+if [[ -n "${COMSPEC:-}" ]]; then
     # PowerShell (Windows native)
     ./skills/nbl.using-git-worktrees/scripts/create-worktree.ps1 <base_name>
 else
@@ -50,7 +50,7 @@ fi
 
 ```bash
 # For merge worktree in parallel mode
-if [[ "$OSTYPE" == "win32" ]] || [[ -n "${PSModulePath:-}" ]]; then
+if [[ -n "${COMSPEC:-}" ]]; then
     ./skills/nbl.using-git-worktrees/scripts/create-worktree.ps1 "<name>-merge"
 else
     ./skills/nbl.using-git-worktrees/scripts/create-worktree.sh "<name>-merge"
