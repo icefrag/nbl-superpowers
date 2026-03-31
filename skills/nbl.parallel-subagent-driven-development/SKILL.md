@@ -319,7 +319,7 @@ digraph process {
         "Global Stage 1: Spec review (all changes)" [shape=box];
         "Global Stage 2: Code quality review (all changes)" [shape=box];
         "Fix any issues found" [shape=box];
-        "Use nbl.finishing-a-development-branch" [shape=doublecircle style=filled fillcolor=lightgreen];
+        "Use nbl.finishing-a-development-branch with mode=parallel" [shape=doublecircle style=filled fillcolor=lightgreen];
     }
 
     // Setup flow
@@ -345,7 +345,7 @@ digraph process {
     "Global Stage 1: Spec review (all changes)" -> "Global Stage 2: Code quality review (all changes)" [label="passed"];
     "Global Stage 2: Code quality review (all changes)" -> "Fix any issues found" [label="issues found"];
     "Fix any issues found" -> "Global Stage 1: Spec review (all changes)";
-    "Global Stage 2: Code quality review (all changes)" -> "Use nbl.finishing-a-development-branch" [label="passed"];
+    "Global Stage 2: Code quality review (all changes)" -> "Use nbl.finishing-a-development-branch with mode=parallel" [label="passed"];
 }
 ```
 
@@ -478,7 +478,7 @@ Prompt templates are shared with serial subagent-driven-development:
 - **nbl.using-git-worktrees** - REQUIRED: Set up isolated worktrees before each level
 - **nbl.writing-plans** - Creates the plan this skill executes (with task dependencies)
 - **nbl.requesting-code-review** - Code review template for reviewer subagents
-- **nbl.finishing-a-development-branch** - Complete development after all tasks are merged
+- **nbl.finishing-a-development-branch** - Complete development after all tasks are merged with mode=parallel
 
 **Subagents should use:**
 - **nbl.test-driven-development** - Subagents follow TDD for each task
