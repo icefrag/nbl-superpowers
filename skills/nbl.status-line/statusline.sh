@@ -25,6 +25,13 @@ proj_name=$(basename "$current_dir")
 git_status_output=""
 branch=""
 if [ -n "$current_dir" ] && cd "$current_dir" 2>/dev/null && git rev-parse --git-dir > /dev/null 2>&1; then
+  # 获取主 worktree 路径（worktree list 的第一个项）
+  # 确保第一行始终显示主 worktree 的分支，即使当前工作目录在子 worktree 中
+  main_wt_path=$(git worktree list --porcelain 2>/dev/null | grep "^worktree" | head -1 | sed 's/^worktree //')
+  if [ -n "$main_wt_path" ]; then
+    cd "$main_wt_path" 2>/dev/null || cd "$current_dir" 2>/dev/null
+  fi
+
   branch=$(git --no-optional-locks branch --show-current 2>/dev/null)
   [ -z "$branch" ] && branch=$(git --no-optional-locks rev-parse --short HEAD 2>/dev/null)
 
