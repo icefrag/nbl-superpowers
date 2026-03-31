@@ -39,7 +39,8 @@ Execute plan by dispatching fresh subagent per task. Each implementer performs b
 Before starting any levels:
 ```
 - If on main/master branch → AUTO-create development branch (feature/bugfix based on plan name)
-- Create ONE merge worktree from development branch
+- Invoke **nbl.using-git-worktrees** skill to create ONE merge worktree from development branch:
+  - Base name: `<name>-merge`
   - Branch: `feature/{name}-merge`
   - Path: `.worktrees/{name}-merge/`
 - All subsequent task worktrees will be created from this merge worktree
@@ -52,6 +53,7 @@ Before starting any levels:
 - No top-level worktree needed before starting - only the merge worktree
 
 **Never:** Dispatch implementer on main/master branch without worktree isolation
+**Never:** Create worktree with direct `git worktree add` - always use **nbl.using-git-worktrees** skill to create worktrees (skill handles correct path calculation)
 
 ### 2. TDD Required (MANDATORY)
 
@@ -143,6 +145,10 @@ Level 2: ...                  # Depends on Level 1
 ```
 For each level:
     ├── Create worktrees for tasks in this level (max 5 per batch)
+    │   For each task, invoke **nbl.using-git-worktrees** skill with:
+    │   - Base name: `<base_name>`
+    │   - Task id: `<task_id>`
+    │   Skill handles correct path calculation automatically: `.worktrees/{base}-task{id}`
     ├── Dispatch agents in parallel
     ├── Wait all tasks complete (implementer does built-in two-stage self-review)
     ├── Rebase each task branch to merge branch
@@ -184,13 +190,13 @@ digraph pipeline_flow {
     subgraph cluster_setup {
         label="Setup (Once at Start)";
         style=filled fillcolor=lightyellow;
-        "Create merge worktree from base branch" [shape=box];
+        "Create merge worktree via nbl.using-git-worktrees" [shape=box];
     }
 
     subgraph cluster_level {
         label="For Each Level";
         style=filled fillcolor=lightblue;
-        "Create worktrees for tasks in this level (max 5)" [shape=box];
+        "Create task worktrees via nbl.using-git-worktrees (<base_name>, <task_id>)" [shape=box];
         "Dispatch N implementers (parallel)" [shape=box];
     }
 
@@ -205,8 +211,8 @@ digraph pipeline_flow {
         "More agents pending?" [shape=diamond];
     }
 
-    "Create merge worktree from base branch" -> "Create worktrees for tasks in this level (max 5)";
-    "Create worktrees for tasks in this level (max 5)" -> "Dispatch N implementers (parallel)";
+    "Create merge worktree via nbl.using-git-worktrees" -> "Create task worktrees via nbl.using-git-worktrees (<base_name>, <task_id>)";
+    "Create task worktrees via nbl.using-git-worktrees (<base_name>, <task_id>)" -> "Dispatch N implementers (parallel)";
     "Dispatch N implementers (parallel)" -> "Wait for ANY agent to complete";
     "Wait for ANY agent to complete" -> "Implementer reports DONE (self-review passed)";
     "Implementer reports DONE (self-review passed)" -> "Rebase task branch to merge branch";
