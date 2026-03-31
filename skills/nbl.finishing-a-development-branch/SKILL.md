@@ -54,11 +54,13 @@ worktree_path=$(find .worktrees -type d | head -1)
 feature_branch=$(git -C "$worktree_path" rev-parse --abbrev-ref HEAD 2>/dev/null)
 
 if [ -n "$feature_branch" ]; then
+  # Strip feature/ prefix to get base_name (cleanup-script adds prefix again)
+  base_name=$(echo "$feature_branch" | sed 's/^feature\///')
   # Cleanup using existing script
   if [[ "$OSTYPE" == "win32" ]] || [[ -n "${PSModulePath:-}" ]]; then
-    ./skills/nbl.using-git-worktrees/scripts/cleanup-worktree.ps1 "$feature_branch" --force
+    ./skills/nbl.using-git-worktrees/scripts/cleanup-worktree.ps1 "$base_name" --force
   else
-    ./skills/nbl.using-git-worktrees/scripts/cleanup-worktree.sh "$feature_branch" --force
+    ./skills/nbl.using-git-worktrees/scripts/cleanup-worktree.sh "$base_name" --force
   fi
 
   # Delete feature branch if it was created from main/master and already merged
@@ -75,19 +77,19 @@ Cleanup any residual parallel task worktrees in `.worktrees/`:
 ```bash
 if [ -d ".worktrees" ] && [ "$(ls -A .worktrees)" ]; then
   echo "Cleaning up parallel task worktrees..."
-  base_branch=$(git branch --show-current)
   for wt_path in .worktrees/*/; do
     [ -d "$wt_path" ] || continue
-    worktree_branch=$(git -C "$wt_path" rev-parse --abbrev-ref HEAD 2>/dev/null)
-    if [ -n "$worktree_branch" ]; then
-      if git merge-base --is-ancestor "$worktree_branch" "$base_branch" 2>/dev/null; then
-        if [ -d "$wt_path" ]; then
-          echo "Removing merged worktree: $wt_path (branch: $worktree_branch)"
-          git worktree remove --force "$wt_path" 2>/dev/null || true
-        fi
-        git branch -d "$worktree_branch" 2>/dev/null || git branch -D "$worktree_branch" 2>/dev/null || true
+    # Get base_name from directory name
+    base_name=$(basename "$wt_path")
+    # Check if it's a parallel task (has -taskN suffix)
+    if [[ "$base_name" =~ -task[0-9]+$ ]]; then
+      # Extract task_id from name (everything after last -task)
+      task_id=$(echo "$base_name" | sed -E 's/.*-task//')
+      # Use cleanup script for consistent behavior
+      if [[ "$OSTYPE" == "win32" ]] || [[ -n "${PSModulePath:-}" ]]; then
+        ./skills/nbl.using-git-worktrees/scripts/cleanup-worktree.ps1 "$base_name" "$task_id" --force
       else
-        echo "Skipping: $worktree_branch not yet merged to $base_branch"
+        ./skills/nbl.using-git-worktrees/scripts/cleanup-worktree.sh "$base_name" "$task_id" --force
       fi
     fi
   done

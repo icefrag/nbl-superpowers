@@ -199,14 +199,16 @@ For each completed agent:
    - `$task_branch` is the branch for this task (e.g., `feature/{base_name}-task{task_id}`)
 4. **Cleanup worktree** - Remove the task worktree immediately (non-blocking)
    ```bash
-   # Cleanup worktree - failure does not block the pipeline
-   if [ -d "$worktree_path" ]; then
-       if git worktree remove --force "$worktree_path" 2>/dev/null; then
-           echo "✅ Worktree cleaned: $worktree_path"
-       else
-           echo "⚠️ Warning: Failed to remove worktree $worktree_path - skipping, manual cleanup may be needed"
-       fi
-   end
+   # Cleanup worktree using shared script - failure does not block the pipeline
+   # base_name is the directory name: {base_name}-task{task_id}
+   base_name=$(basename "$worktree_path")
+   # Extract task_id from name
+   task_id=$(echo "$base_name" | sed -E 's/.*-task//')
+   if [[ "$OSTYPE" == "win32" ]] || [[ -n "${PSModulePath:-}" ]]; then
+     ./skills/nbl.using-git-worktrees/scripts/cleanup-worktree.ps1 "$base_name" "$task_id" --force
+   else
+     ./skills/nbl.using-git-worktrees/scripts/cleanup-worktree.sh "$base_name" "$task_id" --force
+   fi
    ```
 5. **Keep branch** - Branch deletion is handled by `finishing-a-development-branch` after all tasks complete
 
