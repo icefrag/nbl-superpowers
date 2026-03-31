@@ -45,7 +45,12 @@ Before any task execution, these gates MUST pass:
 **GATE 1: Git Worktree Isolation**
 - MUST run in a git worktree (never main/master branch)
 - If not in worktree:
-  - On main/master → **auto-create development branch** (feature/bugfix based on plan name), then create worktree
+  - If **not a git repository** (new project):
+    1. `git init` → add all files → initial commit (now on main/master)
+    2. create `develop` branch from main/master → checkout main worktree to `develop`
+    3. invoke `nbl.using-git-worktrees` to create isolated worktree with branch `feature/{plan-name}`
+  - On main/master (already git repository):
+    - **auto-create development branch** (feature/bugfix based on plan name), checkout main worktree to it, then create worktree
   - On feature/bugfix dev branch → invoke `nbl.using-git-worktrees` to create isolated worktree
 - No exceptions
 
@@ -71,7 +76,8 @@ digraph process {
 
     "Read plan, extract all tasks with full text, note context, create TodoWrite" [shape=box];
     "GATE 1: In git worktree?" [shape=diamond style=filled fillcolor=yellow];
-    "On main/master branch?" [shape=diamond style=filled fillcolor=yellow];
+    "Is git repository?" [shape=diamond style=filled fillcolor=yellow];
+    "Init git, commit, create develop, checkout to develop" [shape=box];
     "Auto-create dev branch from plan name" [shape=box];
     "Invoke nbl.using-git-worktrees" [shape=box];
     "GATE 2: TDD mode enabled?" [shape=diamond style=filled fillcolor=yellow];
@@ -94,7 +100,9 @@ digraph process {
     "GATE 1: In git worktree?" -> "GATE 2: TDD mode enabled?" [label="yes"];
     "GATE 1: In git worktree?" -> "On main/master branch?" [label="no"];
     "On main/master branch?" -> "Invoke nbl.using-git-worktrees" [label="no (on dev branch)"];
-    "On main/master branch?" -> "Auto-create dev branch from plan name" -> "Invoke nbl.using-git-worktrees" [label="yes (on main)"];
+    "On main/master branch?" -> "Is git repository?" [label="yes (on main)"];
+    "Is git repository?" -> "Auto-create dev branch from plan name" -> "Invoke nbl.using-git-worktrees" [label="yes (existing repo)"];
+    "Is git repository?" -> "Init git, commit, create develop, checkout to develop" -> "Invoke nbl.using-git-worktrees" [label="no (new repo)"];
     "Invoke nbl.using-git-worktrees" -> "GATE 1: In git worktree?";
     "GATE 1: In git worktree?" -> "GATE 2: TDD mode enabled?" [label="yes"];
     "GATE 2: TDD mode enabled?" -> "More tasks remain?" [label="yes"];
