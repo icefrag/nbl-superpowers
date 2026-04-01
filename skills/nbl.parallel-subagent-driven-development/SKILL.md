@@ -57,14 +57,14 @@ STEP 3: If INSIDE_ADDED_WORKTREE = YES:
   → Proceed directly to create merge worktree from current branch
 
 STEP 4: If INSIDE_ADDED_WORKTREE = NO (in primary working tree):
-  Get current branch: CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD
+  Get current branch: CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
 
   If CURRENT_BRANCH is "main" or "master":
     1. Auto-create development branch from plan name
     2. Checkout new development branch in primary working tree
 
   // CRITICAL: This step executes for BOTH main/master AND development branches!
-  INVOKE: `/nbl.superpowers:nbl.using-git-worktrees create <base-name-merge>
+  INVOKE: `/nbl.superpowers:nbl.using-git-worktrees create <base-name-merge>`
   // After invocation, you will be inside the newly created merge worktree
   → Setup complete, proceed to read plan and analyze dependencies
 ```
@@ -299,10 +299,11 @@ Large language models excel at resolving Git conflicts because they understand s
 2. If conflict:
    a. Get conflict status: git status
    b. Get conflict details: git diff (shows base vs subagent changes)
-   c. LLM analyzes → generates merged code
-   d. Write merged files
-   e. git add <conflict-files>
-   f. git rebase --continue
+   c. **Read the full content of all conflicted files** to understand context
+   d. LLM analyzes → generates merged code
+   e. Write merged files
+   f. git add <conflict-files>
+   g. git rebase --continue
 3. If auto-resolution succeeds → continue normal flow
 ```
 

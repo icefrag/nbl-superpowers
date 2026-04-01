@@ -78,14 +78,14 @@ STEP 3: If INSIDE_ADDED_WORKTREE = YES:
   → STOP HERE, do NOT create another worktree
 
 STEP 4: If INSIDE_ADDED_WORKTREE = NO (in primary working tree):
-  Get current branch: CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD
+  Get current branch: CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
 
   If CURRENT_BRANCH is "main" or "master":
     1. Auto-create development branch from plan name
     2. Checkout new development branch in primary working tree
 
   // CRITICAL: This step executes for BOTH main/master AND development branches!
-  INVOKE: `/nbl.superpowers:nbl.using-git-worktrees create <base-name-from-plan>
+  INVOKE: `/nbl.superpowers:nbl.using-git-worktrees create <base-name-from-plan>`
   // After invocation, you will be inside the newly created worktree
   → GATE 1 PASSED → proceed to GATE 2
 ```
