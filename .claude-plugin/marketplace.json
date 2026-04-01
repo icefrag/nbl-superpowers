@@ -1,6 +1,7 @@
 {
   "name": "nbl.superpowers",
   "description": "Development marketplace for Superpowers core skills library",
+  "version": "6.3.1",
   "owner": {
     "name": "wurui",
     "email": "icefrag@126.com"
