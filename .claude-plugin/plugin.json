@@ -1,20 +1,5 @@
 {
   "name": "nbl.superpowers",
   "description": "Development marketplace for Superpowers core skills library",
-  "owner": {
-    "name": "wurui",
-    "email": "icefrag@126.com"
-  },
-  "plugins": [
-    {
-      "name": "nbl.superpowers",
-      "description": "Core skills library for Claude Code: TDD, debugging, collaboration patterns, and proven techniques",
-      "version": "6.2.9",
-      "source": "./",
-      "author": {
-        "name": "wurui",
-        "email": "icefrag@126.com"
-      }
-    }
-  ]
+  "version": "6.2.9"
 }
