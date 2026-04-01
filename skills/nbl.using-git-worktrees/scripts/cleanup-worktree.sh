@@ -5,7 +5,20 @@
 
 set -euo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# 计算脚本所在目录，处理 Windows 路径格式
+_normalize_script_dir() {
+    local raw_dir
+    raw_dir=$(dirname "${BASH_SOURCE[0]}")
+    # Windows 兼容性：确保路径使用正斜杠
+    raw_dir="${raw_dir//\\//}"
+    # 如果是相对路径（不以 / 开头，也不是 Windows 绝对路径如 D:/...），转换为绝对路径
+    if [[ ! "$raw_dir" =~ ^(/|[A-Za-z]:/) ]]; then
+        raw_dir="$(pwd)/$raw_dir"
+    fi
+    echo "$raw_dir"
+}
+
+SCRIPT_DIR=$(_normalize_script_dir)
 source "$SCRIPT_DIR/lib/common.sh"
 
 # 跳转到 Git 仓库根目录，解决从子目录调用时相对路径解析错误

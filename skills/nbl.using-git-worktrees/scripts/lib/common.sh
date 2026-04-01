@@ -3,8 +3,9 @@
 # common.sh - Git Worktree 操作公共函数库 (Bash)
 #===============================================================================
 
-# 获取脚本所在目录
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# 获取脚本所在目录（保存到局部变量，不污染全局命名空间）
+# 父脚本已经设置 SCRIPT_DIR，这里不要覆盖
+_COMMON_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 #-------------------------------------------------------------------------------
 # 输出函数
@@ -150,10 +151,37 @@ prepare_worktrees_dir() {
 #-------------------------------------------------------------------------------
 # 功能: 跳转到 Git 仓库根目录，解决从子目录调用时相对路径解析错误问题
 # 说明: 如果不在 Git 仓库中，不做任何操作，脚本继续在当前目录执行
+# 注意: Git 在 Windows 上返回带反斜杠的路径，需要转换为 MSYS 路径格式
+# 关键: 如果在添加的 worktree 中，自动跳转到主仓库根目录（所有 .worktrees/ 都在主仓库根下）
 cd_to_git_root() {
     local git_root
     git_root=$(git rev-parse --show-toplevel 2>/dev/null)
     if [[ -n "$git_root" && -d "$git_root" ]]; then
-        cd "$git_root"
+        # 如果当前是添加的 worktree (.git 是文件不是目录)
+        # 需要跳转到主仓库根目录，因为 .worktrees/ 都在主仓库根下
+        if [[ -f ".git" ]]; then
+            # .git 文件内容格式: gitdir: /path/to/main-repo/.git/worktrees/<worktree-name>
+            local git_dir
+            git_dir=$(awk '{print $2}' < .git 2>/dev/null)
+            if [[ -n "$git_dir" && -d "$git_dir" ]]; then
+                # git_dir: /path/main/.git/worktrees/<worktree-name>
+                # 需要向上三级: /path/main/
+                local main_git_dir=$(dirname "$(dirname "$git_dir")")
+                git_root=$(dirname "$main_git_dir")
+            fi
+        fi
+        # Windows MSYS/Git Bash 兼容性：将 Windows 路径转换为 MSYS 路径格式
+        # 将 C:\path 转换为 /c/path 格式
+        if [[ "$git_root" =~ ^[A-Z]: ]]; then
+            local drive="${git_root:0:1}"
+            local rest="${git_root:2}"
+            # 将反斜杠替换为正斜杠
+            rest="${rest//\\//}"
+            git_root="/${drive,,}${rest}"
+        fi
+        cd "$git_root" || {
+            echo "⚠️  无法切换到 git 根目录: $git_root"
+            return 1
+        }
     fi
 }

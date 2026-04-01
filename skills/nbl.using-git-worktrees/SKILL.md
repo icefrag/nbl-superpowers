@@ -94,7 +94,7 @@ done
 ./skills/nbl.using-git-worktrees/scripts/sub-to-sub-merge.sh <base_name> <task_id>
 ```
 
-**必须在merge工作树中执行** - merge分支已经在此检出，不能在主工作区执行。
+**可从任何位置执行** - 脚本自动检测并跳转到主仓库根目录，通过 `git -C` 在正确的 worktree 中执行命令。
 
 ## Script Reference
 
