@@ -11,51 +11,80 @@ CYAN=$(printf '\033[36m')
 RESET=$(printf '\033[0m')
 
 # ── Extract data from input ──
-model=$(echo "$input" | jq -r '.model.display_name // .model.id // "unknown"')
-current_dir=$(echo "$input" | jq -r '.workspace.current_dir // empty')
-used_pct=$(echo "$input" | jq -r '.context_window.used_percentage // empty')
-total_cost=$(echo "$input" | jq -r '.cost.total_cost_usd // 0')
-duration_ms=$(echo "$input" | jq -r '.cost.total_duration_ms // 0')
+# Use here-string to avoid echo subshell for each jq call
+model=$(jq -r '.model.display_name // .model.id // "unknown"' <<< "$input")
+current_dir=$(jq -r '.workspace.current_dir // empty' <<< "$input")
+used_pct=$(jq -r '.context_window.used_percentage // empty' <<< "$input")
+total_cost=$(jq -r '.cost.total_cost_usd // 0' <<< "$input")
+duration_ms=$(jq -r '.cost.total_duration_ms // 0' <<< "$input")
 
-# ── Project name ──
+# ── Helper Functions ──
+
+# Get git status (staged/modified/untracked counts with colored output)
+# Args:
+#   $1 - repository path
+# Output:
+#   printed colored git status string (e.g. "~2" or "+1~3?2" or "clean")
+get_git_status() {
+  local repo_path="$1"
+  local staged modified untracked output
+  staged=$(git --no-optional-locks -C "$repo_path" diff --cached --numstat 2>/dev/null | wc -l | xargs)
+  modified=$(git --no-optional-locks -C "$repo_path" diff --numstat 2>/dev/null | wc -l | xargs)
+  untracked=$(git --no-optional-locks -C "$repo_path" ls-files --others --exclude-standard 2>/dev/null | wc -l | xargs)
+  output=""
+  [ "$staged" -gt 0 ]    && output="${output}${GREEN}+${staged}${RESET}"
+  [ "$modified" -gt 0 ]  && output="${output}${YELLOW}~${modified}${RESET}"
+  [ "$untracked" -gt 0 ] && output="${output}${RED}?${untracked}${RESET}"
+  if [ -z "$output" ]; then
+    output="${GREEN}clean${RESET}"
+  fi
+  printf "%s" "$output"
+}
+
+# Get current branch name for a repository
+# Args:
+#   $1 - repository path
+# Output:
+#   printed branch name or short commit hash
+get_branch() {
+  local repo_path="$1"
+  local branch
+  branch=$(git --no-optional-locks -C "$repo_path" branch --show-current 2>/dev/null)
+  if [ -z "$branch" ]; then
+    branch=$(git --no-optional-locks -C "$repo_path" rev-parse --short HEAD 2>/dev/null)
+  fi
+  printf "%s" "$branch"
+}
+
+# ── Project name and main worktree branch ──
 # Always get project name from main worktree (first in worktree list)
-proj_name=""
+proj_name=$(basename "$current_dir")
 git_status_output=""
 branch=""
+worktree_list=""
 
-# Try to get main worktree from git worktree list first
-if [ -n "$current_dir" ] && cd "$current_dir" 2>/dev/null && git rev-parse --git-dir > /dev/null 2>&1; then
-  if git worktree list --porcelain >/dev/null 2>&1; then
-    main_wt_path=$(git worktree list --porcelain 2>/dev/null | grep "^worktree" | head -1 | sed 's/^worktree //')
-    if [ -n "$main_wt_path" ]; then
+# Check if we're in a git repository
+if [ -n "$current_dir" ] && git rev-parse --git-dir >/dev/null 2>&1 -C "$current_dir"; then
+  # Try to get worktree list once (reused later for worktree listing)
+  worktree_list=$(git worktree list --porcelain 2>/dev/null)
+
+  if [ -n "$worktree_list" ]; then
+    # Extract main worktree path (first entry)
+    main_wt_path=$(echo "$worktree_list" | grep "^worktree" | head -1 | sed 's/^worktree //')
+    if [ -n "$main_wt_path" ] && git rev-parse --git-dir >/dev/null 2>&1 -C "$main_wt_path"; then
+      # Found valid main worktree - use it
       proj_name=$(basename "$main_wt_path")
-      if ! cd "$main_wt_path" 2>/dev/null; then
-        proj_name=$(basename "$current_dir")
-        cd "$current_dir" 2>/dev/null
-      fi
+      branch=$(get_branch "$main_wt_path")
+      git_status_output=$(get_git_status "$main_wt_path")
     else
-      proj_name=$(basename "$current_dir")
-      cd "$current_dir" 2>/dev/null
+      # Main worktree not valid - fall back to current directory
+      branch=$(get_branch "$current_dir")
+      git_status_output=$(get_git_status "$current_dir")
     fi
   else
-    proj_name=$(basename "$current_dir")
-    cd "$current_dir" 2>/dev/null
-  fi
-
-  branch=$(git --no-optional-locks branch --show-current 2>/dev/null)
-  [ -z "$branch" ] && branch=$(git --no-optional-locks rev-parse --short HEAD 2>/dev/null)
-
-  staged=$(git --no-optional-locks diff --cached --numstat 2>/dev/null | wc -l | tr -d ' ')
-  modified=$(git --no-optional-locks diff --numstat 2>/dev/null | wc -l | tr -d ' ')
-  untracked=$(git --no-optional-locks ls-files --others --exclude-standard 2>/dev/null | wc -l | tr -d ' ')
-
-  git_status_output=""
-  [ "$staged" -gt 0 ]    && git_status_output="${git_status_output}${GREEN}+${staged}${RESET}"
-  [ "$modified" -gt 0 ]  && git_status_output="${git_status_output}${YELLOW}~${modified}${RESET}"
-  [ "$untracked" -gt 0 ] && git_status_output="${git_status_output}${RED}?${untracked}${RESET}"
-
-  if [ -z "$git_status_output" ]; then
-    git_status_output="${GREEN}clean${RESET}"
+    # git worktree not supported - fall back to current directory
+    branch=$(get_branch "$current_dir")
+    git_status_output=$(get_git_status "$current_dir")
   fi
 fi
 
@@ -115,53 +144,39 @@ MAGENTA=$(printf '\033[35m')
 # ── Worktree List (从第三行开始输出) ──
 worktree_output=""
 
-if [ -n "$current_dir" ] && cd "$current_dir" 2>/dev/null && git rev-parse --git-dir > /dev/null 2>&1; then
-  # 使用 --porcelain 格式获取 worktree 列表
-  worktree_list=$(git worktree list --porcelain 2>/dev/null)
-
+if [ -n "$current_dir" ] && git rev-parse --git-dir >/dev/null 2>&1 -C "$current_dir"; then
+  # Use cached worktree_list from earlier (only one git invocation total)
   if [ -n "$worktree_list" ]; then
-    # 获取主工作区路径（第一个 worktree），然后定位 .worktrees 目录
+    # Get main worktree path and normalize for .worktrees root detection
     main_worktree_path=$(echo "$worktree_list" | grep "^worktree" | head -1 | sed 's/^worktree //')
-    main_worktree_path_normalized=$(echo "$main_worktree_path" | sed 's/\\/\//g')
+    # Replace backslashes with forward slashes using bash parameter expansion (no subshell)
+    main_worktree_path_normalized=${main_worktree_path//\\//}
     worktrees_root="${main_worktree_path_normalized}/.worktrees/"
 
-    # 解析 porcelain 格式，提取路径和分支
+    # Parse porcelain format, extract path and branch
     worktree_index=0
+    wt_path=""
     while IFS= read -r line; do
       if [[ "$line" == worktree\ * ]]; then
         wt_path="${line#worktree }"
-        wt_path_normalized=$(echo "$wt_path" | sed 's/\\/\//g')
       elif [[ "$line" == branch\ * ]]; then
         branch_full="${line#branch }"
-        # 去除 refs/heads/ 前缀
+        # Remove refs/heads/ prefix
         branch_name="${branch_full#refs/heads/}"
-        # 检查路径是否在主工作区的 .worktrees/ 目录下
+        # Replace backslashes with forward slashes using bash parameter expansion
+        wt_path_normalized=${wt_path//\\//}
+        # Only list worktrees under .worktrees/ directory (user-created sub worktrees)
         if [[ "$wt_path_normalized" == "$worktrees_root"* ]]; then
-          # 提取 worktree 目录名
           wt_name=$(basename "$wt_path")
           worktree_index=$((worktree_index + 1))
-
-          # 获取 worktree 的 git 状态
-          wt_status=""
-          if cd "$wt_path" 2>/dev/null; then
-            wt_staged=$(git --no-optional-locks diff --cached --numstat 2>/dev/null | wc -l | tr -d ' ')
-            wt_modified=$(git --no-optional-locks diff --numstat 2>/dev/null | wc -l | tr -d ' ')
-            wt_untracked=$(git --no-optional-locks ls-files --others --exclude-standard 2>/dev/null | wc -l | tr -d ' ')
-            [ "$wt_staged" -gt 0 ]    && wt_status="${wt_status}${GREEN}+${wt_staged}${RESET}"
-            [ "$wt_modified" -gt 0 ]  && wt_status="${wt_status}${YELLOW}~${wt_modified}${RESET}"
-            [ "$wt_untracked" -gt 0 ] && wt_status="${wt_status}${RED}?${wt_untracked}${RESET}"
-            if [ -z "$wt_status" ]; then
-              wt_status="${GREEN}clean${RESET}"
-            fi
-            cd "$current_dir" 2>/dev/null
-          fi
-
+          # Get worktree git status using git -C (no cd needed)
+          wt_status=$(get_git_status "$wt_path")
           worktree_output="${worktree_output}  ${BLUE}${worktree_index}. ${wt_name} ${MAGENTA}→${RESET} ${MAGENTA}${branch_name}${RESET} ${wt_status}\n"
         fi
       fi
     done <<< "$worktree_list"
 
-    # 如果有 worktree，输出标题和列表
+    # If we found worktrees, output the list
     if [ "$worktree_index" -gt 0 ]; then
       echo -e " Worktrees:"
       echo -ne "$worktree_output"
