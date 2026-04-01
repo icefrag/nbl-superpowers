@@ -29,42 +29,45 @@ Execute plan by dispatching fresh subagent per task. Each implementer performs b
 
 <NON_NEGOTIABLE>
 
+**CRITICAL RULE:**
+> **If you are in the primary working tree (`.git` is a directory)**, regardless of whether you are on `main`/`master` or already on a development branch, you **MUST** invoke `nbl.using-git-worktrees` to create an isolated merge worktree before processing any tasks. **NO EXCEPTIONS.**
+>
+> Primary working tree is for branch management only. ALL tasks run in isolated worktrees. Never implement directly in primary worktree.
+
+</NON_NEGOTIABLE>
+
 ### 1. Worktree Setup (MANDATORY)
 
 **Typical Usage Pattern (our convention):**
 > User ALWAYS starts Claude Code in the **main working tree** (primary worktree). The skill creates the isolated merge worktree, user doesn't manually cd into worktrees to start Claude Code.
 
-**Check Process (step-by-step):**
+**FULL Check Process (execute step-by-step, NO shortcuts):**
 
-1. **Check if we are in the primary (main) working tree or an added worktree:**
-   ```bash
-   # If .git is a file → inside an added worktree
-   # If .git is a directory → inside primary working tree (NOT inside any added worktree)
-   if [ -f ".git" ]; then
-     INSIDE_ADDED_WORKTREE=true
-   else
-     INSIDE_ADDED_WORKTREE=false
-   fi
-   ```
+```
+STEP 1: Pre-check - Is this a Git repository?
+  Execute: git rev-parse --is-inside-work-tree
+  If NO → STOP, prompt user to initialize Git
+  If YES → continue to STEP 2
 
-2. **If already inside an added worktree:**
-   - This means user manually cd here and started Claude Code inside the worktree
-   - GATE 1 passes, proceed directly to create merge worktree from current branch
+STEP 2: Check if already inside an added worktree:
+  If .git is a file → INSIDE_ADDED_WORKTREE = YES
+  If .git is a directory → INSIDE_ADDED_WORKTREE = NO
 
-3. **If in primary working tree (normal case for our usage pattern):**
-   - Check current branch:
-     ```bash
-     CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
-     if [[ "$CURRENT_BRANCH" == "main" || "$CURRENT_BRANCH" == "master" ]]; then
-       # On main/master → MUST auto-create a development branch (feature/bugfix based on plan name)
-       # 1. Create development branch from main/master
-       # 2. Checkout the new development branch in the primary working tree
-       # 3. Invoke `nbl.using-git-worktrees` to create ONE merge worktree from this development branch
-     else
-       # Already on a feature/bugfix development branch → invoke `nbl.using-git-worktrees` directly
-       # The merge worktree will branch from this existing development branch
-     fi
-     ```
+STEP 3: If INSIDE_ADDED_WORKTREE = YES:
+  → Proceed directly to create merge worktree from current branch
+
+STEP 4: If INSIDE_ADDED_WORKTREE = NO (in primary working tree):
+  Get current branch: CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD
+
+  If CURRENT_BRANCH is "main" or "master":
+    1. Auto-create development branch from plan name
+    2. Checkout new development branch in primary working tree
+
+  // CRITICAL: This step executes for BOTH main/master AND development branches!
+  INVOKE: `/nbl.superpowers:nbl.using-git-worktrees create <base-name-merge>
+  // After invocation, you will be inside the newly created merge worktree
+  → Setup complete, proceed to read plan and analyze dependencies
+```
 
 **Result after setup:**
 ```
@@ -335,11 +338,13 @@ digraph process {
         style=filled fillcolor=lightyellow;
         "Pre-Check: Is git repository?" [shape=diamond style=filled fillcolor=yellow];
         "STOP: Not a git repository" [shape=box style=filled fillcolor=red];
-        "⛔ GATE 1: Check current branch" [shape=box style=filled fillcolor=yellow];
+        "STEP 2: .git is file or directory?" [shape=diamond style=filled fillcolor=yellow];
         "On main/master?" [shape=diamond style=filled fillcolor=yellow];
+        "Auto-create dev branch from plan name" [shape=box];
+        "INVOKE nbl.using-git-worktrees (create merge worktree)" [shape=box style=filled fillcolor=lightblue];
+        "Merge worktree created ✓" [shape=box style=filled fillcolor=lightgreen];
         "Read plan, extract all tasks with full text, note context, create TodoWrite" [shape=box];
         "Analyze dependencies → Build levels" [shape=box];
-        "Create merge worktree from base branch" [shape=box];
     }
 
     subgraph cluster_level_loop {
@@ -351,11 +356,14 @@ digraph process {
 
     // Pre-execution flow
     "Pre-Check: Is git repository?" -> "STOP: Not a git repository" [label="no"];
-    "Pre-Check: Is git repository?" -> "⛔ GATE 1: Check current branch" [label="yes"];
-    "⛔ GATE 1: Check current branch" -> "On main/master?";
-    "On main/master?" -> "Read plan, extract all tasks with full text, note context, create TodoWrite" [label="no - ok, create merge worktree from dev branch"];
+    "Pre-Check: Is git repository?" -> "STEP 2: .git is file or directory?" [label="yes"];
+    "STEP 2: .git is file or directory?" -> "Merge worktree created ✓" [label=".git is FILE (already in worktree)"];
+    "STEP 2: .git is file or directory?" -> "On main/master?" [label=".git is DIR (in primary worktree)"];
     "On main/master?" -> "Auto-create dev branch from plan name" [label="yes"];
-    "Auto-create dev branch from plan name" -> "Checkout new branch (feature/bugfix)" -> "Read plan, extract all tasks...";
+    "On main/master?" -> "INVOKE nbl.using-git-worktrees (create merge worktree)" [label="no - on dev branch"];
+    "Auto-create dev branch from plan name" -> "INVOKE nbl.using-git-worktrees (create merge worktree)";
+    "INVOKE nbl.using-git-worktrees (create merge worktree)" -> "Merge worktree created ✓";
+    "Merge worktree created ✓" -> "Read plan, extract all tasks with full text, note context, create TodoWrite";
 
     subgraph cluster_pipeline {
         label="Pipeline Processing";
@@ -385,8 +393,7 @@ digraph process {
 
     // Setup flow
     "Read plan, extract all tasks with full text, note context, create TodoWrite" -> "Analyze dependencies → Build levels";
-    "Analyze dependencies → Build levels" -> "Create merge worktree from base branch";
-    "Create merge worktree from base branch" -> "Create worktrees for tasks in this level (max 5)";
+    "Analyze dependencies → Build levels" -> "Create worktrees for tasks in this level (max 5)";
     "Create worktrees for tasks in this level (max 5)" -> "Dispatch N implementers (each with built-in two-stage review)";
 
     // Pipeline processing

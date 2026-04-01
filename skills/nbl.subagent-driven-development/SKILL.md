@@ -43,44 +43,52 @@ digraph when_to_use {
 Before any task execution, these gates MUST pass:
 
 **GATE 1: Git Worktree Isolation**
+
+<NON_NEGOTIABLE>
+
+**CRITICAL RULE:**
+> **If you are in the primary working tree (`.git` is a directory)**, regardless of whether you are on `main`/`master` or already on a development branch, you **MUST** invoke `nbl.using-git-worktrees` to create an isolated sub-worktree before dispatching any implementer. **NO EXCEPTIONS.**
+
+> Primary working tree is for branch management only. ALL implementation tasks run in isolated sub-worktrees. Never implement directly in primary worktree.
+
+</NON_NEGOTIABLE>
+
 - **Pre-Check: Must be a Git repository**
   - Check if current directory is a Git repository
   - If **NOT** a Git repository → **STOP immediately** and tell the user:
     > "Error: nbl.subagent-driven-development requires a Git repository. Please run `git init` to initialize a repository, then retry."
+
 **Typical Usage Pattern (our convention):**
 > User ALWAYS starts Claude Code in the **main working tree** (primary worktree). The skill creates the isolated worktree, user doesn't manually cd into worktrees to start Claude Code.
 
-**Check Process (step-by-step):**
+**FULL Check Process (execute step-by-step, NO shortcuts):**
 
-1. **Check if we are in the primary (main) working tree or an added worktree:**
-   ```bash
-   # If .git is a file → inside an added worktree
-   # If .git is a directory → inside primary working tree (NOT inside any added worktree)
-   if [ -f ".git" ]; then
-     INSIDE_ADDED_WORKTREE=true
-   else
-     INSIDE_ADDED_WORKTREE=false
-   fi
-   ```
+```
+STEP 1: Pre-check - Is this a Git repository?
+  Execute: git rev-parse --is-inside-work-tree
+  If NO → STOP, prompt user to initialize Git
+  If YES → continue to STEP 2
 
-2. **If already inside an added worktree:**
-   - This means user manually cd here and started Claude Code inside the worktree
-   - GATE 1 passes, proceed directly to GATE 2
+STEP 2: Check if already inside an added worktree:
+  If .git is a file → INSIDE_ADDED_WORKTREE = YES
+  If .git is a directory → INSIDE_ADDED_WORKTREE = NO
 
-3. **If in primary working tree (normal case for our usage pattern):**
-   - Check current branch:
-     ```bash
-     CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
-     if [[ "$CURRENT_BRANCH" == "main" || "$CURRENT_BRANCH" == "master" ]]; then
-       # On main/master → MUST auto-create a development branch (feature/bugfix based on plan name)
-       # 1. Create development branch from main/master
-       # 2. Checkout the new development branch in the primary working tree
-       # 3. Invoke `nbl.using-git-worktrees` to create isolated worktree from this development branch
-     else
-       # Already on a feature/bugfix development branch → invoke `nbl.using-git-worktrees` directly
-       # The created worktree will branch from this existing development branch
-     fi
-     ```
+STEP 3: If INSIDE_ADDED_WORKTREE = YES:
+  → GATE 1 PASSED → proceed directly to GATE 2
+  → STOP HERE, do NOT create another worktree
+
+STEP 4: If INSIDE_ADDED_WORKTREE = NO (in primary working tree):
+  Get current branch: CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD
+
+  If CURRENT_BRANCH is "main" or "master":
+    1. Auto-create development branch from plan name
+    2. Checkout new development branch in primary working tree
+
+  // CRITICAL: This step executes for BOTH main/master AND development branches!
+  INVOKE: `/nbl.superpowers:nbl.using-git-worktrees create <base-name-from-plan>
+  // After invocation, you will be inside the newly created worktree
+  → GATE 1 PASSED → proceed to GATE 2
+```
 
 **MUST create isolated worktree before starting implementation, NO exceptions.**
 
@@ -107,9 +115,11 @@ digraph process {
     "Read plan, extract all tasks with full text, note context, create TodoWrite" [shape=box];
     "Pre-Check: Is git repository?" [shape=diamond style=filled fillcolor=yellow];
     "STOP: Not a git repository" [shape=box style=filled fillcolor=red];
-    "GATE 1: In git worktree?" [shape=diamond style=filled fillcolor=yellow];
+    "STEP 2: .git is file or directory?" [shape=diamond style=filled fillcolor=yellow];
+    "On main/master branch?" [shape=diamond style=filled fillcolor=yellow];
     "Auto-create dev branch from plan name" [shape=box];
-    "Invoke nbl.using-git-worktrees" [shape=box];
+    "INVOKE nbl.using-git-worktrees (MANDATORY)" [shape=box style=filled fillcolor=lightblue];
+    "In sub-worktree → GATE 1 PASSED" [shape=box style=filled fillcolor=lightgreen];
     "GATE 2: TDD mode enabled?" [shape=diamond style=filled fillcolor=yellow];
     "More tasks remain?" [shape=diamond];
     "Dispatch implementer subagent (with built-in two-stage review)" [shape=box];
@@ -127,13 +137,14 @@ digraph process {
 
     "Read plan, extract all tasks with full text, note context, create TodoWrite" -> "Pre-Check: Is git repository?";
     "Pre-Check: Is git repository?" -> "STOP: Not a git repository" [label="no"];
-    "Pre-Check: Is git repository?" -> "GATE 1: In git worktree?" [label="yes"];
-    "GATE 1: In git worktree?" -> "GATE 2: TDD mode enabled?" [label="yes"];
-    "GATE 1: In git worktree?" -> "On main/master branch?" [label="no"];
-    "On main/master branch?" -> "Invoke nbl.using-git-worktrees" [label="no (on dev branch)"];
-    "On main/master branch?" -> "Auto-create dev branch from plan name" -> "Invoke nbl.using-git-worktrees" [label="yes (on main)"];
-    "Invoke nbl.using-git-worktrees" -> "GATE 1: In git worktree?";
-    "GATE 1: In git worktree?" -> "GATE 2: TDD mode enabled?" [label="yes"];
+    "Pre-Check: Is git repository?" -> "STEP 2: .git is file or directory?" [label="yes"];
+    "STEP 2: .git is file or directory?" -> "In sub-worktree → GATE 1 PASSED" [label=".git is FILE (already in worktree)"];
+    "STEP 2: .git is file or directory?" -> "On main/master branch?" [label=".git is DIR (in primary worktree)"];
+    "On main/master branch?" -> "Auto-create dev branch from plan name" [label="yes → create branch, then MANDATORY invoke"];
+    "On main/master branch?" -> "INVOKE nbl.using-git-worktrees (MANDATORY)" [label="no → MANDATORY invoke"];
+    "Auto-create dev branch from plan name" -> "INVOKE nbl.using-git-worktrees (MANDATORY)";
+    "INVOKE nbl.using-git-worktrees (MANDATORY)" -> "In sub-worktree → GATE 1 PASSED";
+    "In sub-worktree → GATE 1 PASSED" -> "GATE 2: TDD mode enabled?";
     "GATE 2: TDD mode enabled?" -> "More tasks remain?" [label="yes"];
     "More tasks remain?" -> "Dispatch implementer subagent (with built-in two-stage review)" [label="yes"];
     "Dispatch implementer subagent (with built-in two-stage review)" -> "Implementer asks questions?";
