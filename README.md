@@ -102,7 +102,6 @@ flowchart TD
 | **nbl.tech-design** | 根据需求生成技术设计文档 | 技术方案、API 设计、数据库设计 |
 | **nbl.deep-research** | 多源深度网络研究 | 需要调研收集信息 |
 | **nbl.status-line** | 自定义 Claude Code 状态栏 | 安装显示模型 / Git / 上下文 / 成本 / worktree 信息 |
-| **nbl.update-codemaps** | 生成项目 `CLAUDE.md` 文档 | 新建项目、项目结构变化 |
 | **nbl.update-rules** | 管理更新 `rules/common/` 规则文件 | 修改编码规范 |
 | **nbl.writing-skills** | 辅助创建和修改新技能 | 开发自定义 skill |
 | **nbl.test-driven-development** | 测试驱动开发工作流 | 新功能开发、Bug 修复 |
@@ -143,7 +142,6 @@ skills/
 ├── nbl.tech-design/                 # 技术设计文档生成
 ├── nbl.deep-research/               # 多源深度研究
 ├── nbl.status-line/                 # 自定义状态栏
-├── nbl.update-codemaps/             # 生成 CLAUDE.md 项目文档
 ├── nbl.update-rules/                # 规则文件管理
 ├── nbl.writing-skills/              # 技能开发工具
 └── nbl.test-driven-development/     # 测试驱动开发

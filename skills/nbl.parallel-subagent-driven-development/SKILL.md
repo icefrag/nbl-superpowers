@@ -13,15 +13,7 @@ Execute plan by dispatching fresh subagent per task. Each implementer performs b
 
 **Parallel execution:** Analyzes task dependencies, groups tasks by level, and executes independent tasks in parallel within each level.
 
-**Key difference from previous design:** Parallel mode creates a top-level merge worktree at startup from the base development branch. All tasks in each level fork from this merge worktree and merge back to it after completion. After all tasks complete, only the merge worktree remains with all accumulated changes, and the original finishing-a-development-branch skill can be used.
-
-## ⛔ Pre-Check: Git Repository Validation
-
-**This skill requires a Git repository.** Before any action:
-1. Check if current directory is a Git repository (`git rev-parse --is-inside-work-tree`)
-2. If **NOT** a Git repository → **STOP immediately** and tell the user:
-   > "Error: nbl.parallel-subagent-driven-development requires a Git repository. Please run `git init` to initialize a repository, then retry."
-3. If it IS a Git repository → continue to next steps
+**Core design:** Parallel mode creates a top-level merge worktree at startup from the development branch. All tasks in each level fork from this merge worktree and merge back to it after completion. After all tasks complete, only the merge worktree remains with all accumulated changes, and `nbl.finishing-a-development-branch` can be used directly.
 
 ## NON-NEGOTIABLE Requirements (Read BEFORE Starting)
 
@@ -77,11 +69,11 @@ STEP 4: If INSIDE_ADDED_WORKTREE = NO (in primary working tree):
 - All subsequent task worktrees will be created from this merge worktree
 ```
 
-**Key difference from previous design:**
-- Create ONE top-level merge worktree at startup from the development branch
-- Each task in each level creates its own isolated worktree from merge worktree
-- After each task completes, it's merged back to merge worktree and the task worktree is cleaned up
-- No top-level worktree needed before starting - only the merge worktree
+**Design points:**
+- Create **ONE** top-level merge worktree at startup from the development branch
+- Each task in each level creates its own isolated worktree from the merge worktree
+- After each task completes, it's merged back to the merge worktree and the task worktree is cleaned up
+- Only one merge worktree needed from the start - no extra top-level worktree required
 
 **Never:** Dispatch implementer on main/master branch without worktree isolation
 **Never:** Create worktree with direct `git worktree add` - always use **nbl.using-git-worktrees** skill to create worktrees (skill handles correct path calculation)
@@ -430,8 +422,7 @@ digraph process {
 
 | Gate | Location | Requirement |
 |------|----------|-------------|
-| **Pre-Check: Git Repository** | Before anything | Must be in a Git repository. If not, stop immediately and prompt user to run `git init`. |
-| **GATE 1: Branch Check + Merge Worktree** | BEFORE starting levels | If on main/master → **auto-create development branch** (feature/bugfix based on plan name). Create merge worktree from development branch. All tasks merge back to this merge branch. |
+| **GATE 1: Branch Check + Merge Worktree** | BEFORE starting levels (includes Git repo validation) | If on main/master → **auto-create development branch** (feature/bugfix based on plan name). Create merge worktree from development branch. All tasks merge back to this merge branch. |
 | **GATE 2: TDD** | Implementer phase | MUST invoke `nbl.test-driven-development` skill |
 | **GATE 3: Built-In Self-Review** | Implementer phase | Each implementer MUST perform two-stage self-review before reporting DONE |
 | **GATE 4: Global Spec Review** | After all levels complete | MUST invoke spec reviewer on all merged changes |
