@@ -73,6 +73,16 @@ flowchart TD
 
 ---
 
+## 🔄 更新方式
+
+<img width="600" height="300" alt="image" src="https://github.com/user-attachments/assets/8ae38a00-d2de-4d16-a9ef-ca16cadf5548" />
+<img width="600" height="300" alt="image" src="https://github.com/user-attachments/assets/23c7597b-fd15-4ff6-b729-ea4a0354c328" />
+<img width="600" height="300" alt="image" src="https://github.com/user-attachments/assets/bc13ca8f-8c07-4c78-8415-ef539d14f6f7" />
+<img width="600" height="300" alt="image" src="https://github.com/user-attachments/assets/98ed4f12-6f67-4364-afae-fe028cf06ff3" />
+<img width="600" height="300" alt="image" src="https://github.com/user-attachments/assets/a66194de-570e-415d-9cd0-6d1060db49f7" />
+
+---
+
 ## 🧩 Skills
 
 ### 开发工作流
@@ -158,21 +168,6 @@ skills/
 | **安全审核** | 代码在 worktree 开发完成，人工审核后才合并到主分支 |
 | **多会话支持** | 支持同时打开多个 Claude Code 会话并行处理多个需求 |
 | **兼容官方** | 所有技能遵循官方 superpowers 设计原则，学习成本低 |
-
----
-
-## 更新方式
-<img width="600" height="300" alt="image" src="https://github.com/user-attachments/assets/8ae38a00-d2de-4d16-a9ef-ca16cadf5548" />
-<img width="600" height="300" alt="image" src="https://github.com/user-attachments/assets/23c7597b-fd15-4ff6-b729-ea4a0354c328" />
-<img width="600" height="300" alt="image" src="https://github.com/user-attachments/assets/bc13ca8f-8c07-4c78-8415-ef539d14f6f7" />
-<img width="600" height="300" alt="image" src="https://github.com/user-attachments/assets/98ed4f12-6f67-4364-afae-fe028cf06ff3" />
-<img width="600" height="300" alt="image" src="https://github.com/user-attachments/assets/a66194de-570e-415d-9cd0-6d1060db49f7" />
-
-
-
-
-
-
 
 ---
 
