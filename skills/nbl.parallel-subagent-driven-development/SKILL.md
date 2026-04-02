@@ -11,29 +11,21 @@ Execute plan by dispatching fresh subagent per task. Each implementer performs b
 
 **Core principle:** Fresh subagent per task with built-in two-stage self-review + global review after all tasks = high quality, fast iteration
 
-**Parallel execution:** Analyzes task dependencies, groups tasks by level, and executes independent tasks in parallel within each level.
-
 **Core design:** Parallel mode creates a top-level merge worktree at startup from the development branch. All tasks in each level fork from this merge worktree and merge back to it after completion. After all tasks complete, only the merge worktree remains with all accumulated changes, and `nbl.finishing-a-development-branch` can be used directly.
 
 ## NON-NEGOTIABLE Requirements (Read BEFORE Starting)
 
-**You MUST complete these checks before dispatching ANY implementer subagent:**
+| Check | Requirement |
+|-------|-------------|
+| **Worktree Isolation** | MUST create isolated merge worktree via `nbl.using-git-worktrees` before any dispatching. If in primary worktree (`.git` is a directory), invoke `nbl.using-git-worktrees` first. NEVER implement directly in primary worktree. |
+| **TDD Required** | Every implementation task MUST invoke `nbl.test-driven-development` skill FIRST. Never write implementation before tests. |
+| **Two-Stage Self-Review** | Each implementer MUST complete: Stage 1 (spec compliance, line-by-line check) → Stage 2 (code quality, naming, conventions). Fix issues immediately in each stage. Never report DONE until both stages pass with NO issues. |
+| **Merge Lifecycle** | One merge worktree created at startup, ALL task merges go here. MUST NOT delete before all levels complete. After all levels, `finishing-a-development-branch` handles final cleanup. |
+| **Directory Safety** | Always `cd` back to project root between Bash commands. Prefer `sub-to-sub-merge` script for merge + cleanup in one step. Never leave CWD inside a nested worktree. |
 
-<NON_NEGOTIABLE>
+## Worktree Setup (MANDATORY)
 
-**CRITICAL RULE:**
-> **If you are in the primary working tree (`.git` is a directory)**, regardless of whether you are on `main`/`master` or already on a development branch, you **MUST** invoke `nbl.using-git-worktrees` to create an isolated merge worktree before processing any tasks. **NO EXCEPTIONS.**
->
-> Primary working tree is for branch management only. ALL tasks run in isolated worktrees. Never implement directly in primary worktree.
-
-</NON_NEGOTIABLE>
-
-### 1. Worktree Setup (MANDATORY)
-
-**Typical Usage Pattern (our convention):**
-> User ALWAYS starts Claude Code in the **main working tree** (primary worktree). The skill creates the isolated merge worktree, user doesn't manually cd into worktrees to start Claude Code.
-
-**FULL Check Process (execute step-by-step, NO shortcuts):**
+**Full Check Process (execute step-by-step):**
 
 ```
 STEP 1: Pre-check - Is this a Git repository?
@@ -68,72 +60,6 @@ STEP 4: If INSIDE_ADDED_WORKTREE = NO (in primary working tree):
 - Path: `.worktrees/{name}-merge/`
 - All subsequent task worktrees will be created from this merge worktree
 ```
-
-**Design points:**
-- Create **ONE** top-level merge worktree at startup from the development branch
-- Each task in each level creates its own isolated worktree from the merge worktree
-- After each task completes, it's merged back to the merge worktree and the task worktree is cleaned up
-- Only one merge worktree needed from the start - no extra top-level worktree required
-
-**Never:** Dispatch implementer on main/master branch without worktree isolation
-**Never:** Create worktree with direct `git worktree add` - always use **nbl.using-git-worktrees** skill to create worktrees (skill handles correct path calculation)
-**MUST:** complete setup before any task dispatching, NO exceptions
-
-### 2. TDD Required (MANDATORY)
-
-```
-Every implementation task MUST:
-├── Invoke nbl.test-driven-development skill FIRST
-├── Skill guides RED→GREEN→REFACTOR cycle
-└── Never write implementation before tests
-```
-
-**Never:** Skip TDD skill, write implementation before tests
-
-### 3. Built-In Two-Stage Self-Review (MANDATORY)
-
-```
-Each implementer MUST complete this before reporting DONE:
-├── Stage 1: Spec compliance self-review
-│   ├── Check all requirements line-by-line
-│   ├── ❌ Issues? → Implementer fixes immediately
-│   └── ✅ Pass → Proceed to Stage 2
-├── Stage 2: Code quality self-review
-│   ├── Check code quality, naming, conventions
-│   ├── ❌ Issues? → Implementer fixes immediately
-│   └── ✅ Pass → Report DONE
-└── Never report DONE until both stages pass with NO issues
-```
-
-**Never:**
-- Skip either stage of self-review
-- Report DONE with unfixed issues
-- Proceed to merge with open issues
-
-**This is NON-NEGOTIABLE.** Each task must pass both stages of self-review before it can be merged.
-
-### 4. Merge Worktree Lifecycle (MANDATORY)
-
-```
-- One merge worktree is created at startup from development branch
-- ALL task merges go to the merge worktree's merge branch
-- The merge worktree MUST remain intact until ALL levels complete
-- After all levels complete, nbl.finishing-a-development-branch handles final merge to development branch and cleanup
-```
-
-**Never:** Delete the merge worktree before all levels complete. This breaks the entire flow.
-
-### 5. Directory Safety (MANDATORY)
-
-```
-- After any 'cd' into a worktree, always 'cd' back to project root before next command
-- Prefer using the shared sub-to-sub-merge script for complete merge + cleanup in one step
-- Never leave the current working directory inside a worktree between Bash commands
-```
-
-Bash tool preserves working directory between invocations. Getting lost in nested directories breaks all relative path lookups.
-
-</NON_NEGOTIABLE>
 
 ## Level-Based Execution
 
@@ -181,7 +107,7 @@ For each level:
     └── Proceed to next level
 ```
 
-### Per-Task Rebase + Merge Process
+### Per-Task Rebase + Merge + Cleanup
 
 For each completed agent:
 
@@ -190,12 +116,9 @@ For each completed agent:
    ```
    /nbl.superpowers:nbl.using-git-worktrees merge-sub <base_name> <task_id>
    ```
-   > ⚠️ **NON-NEGOTIABLE**: The merge **must** happen inside the merge worktree. The merge branch is already checked out there — do NOT attempt `git checkout $merge_branch` in the main workspace (Git forbids checking out the same branch in two worktrees simultaneously).
-3. **Keep branch** - Branch deletion is handled by `finishing-a-development-branch` after all tasks complete
+   > ⚠️ The merge **must** happen inside the merge worktree. Do NOT attempt `git checkout $merge_branch` in the main workspace (Git forbids checking out the same branch in two worktrees simultaneously).
 
 ### Level Completion Criteria
-
-**All tasks must complete ALL steps before next level:**
 
 | Step | Description | Must Pass? |
 |------|-------------|------------|
@@ -215,24 +138,20 @@ If any task fails at any step:
 
 | Scenario | Action |
 |----------|--------|
-| Implementer cannot complete (BLOCKED/NEEDS_CONTEXT) | Main agent provides context or re-dispatch |
-| Rebase conflict | Follow "Rebase Conflict Resolution" section below |
+| Implementer BLOCKED/NEEDS_CONTEXT | Main agent provides context or re-dispatch |
+| Rebase conflict | Follow "Rebase Conflict Resolution" below |
 | Merge fails | Rollback, fix, retry |
-| **Any task in level fails** | **Whole level blocked — do NOT proceed to next level** |
+| **Any task in level fails** | **Whole level blocked** |
 
-**Rule:** One agent failure does not block other parallel agents from executing, but blocks that agent's subsequent merges until fixed. Any failure at the level level blocks the entire level from completing.
+**Rule:** One agent failure does not block other parallel agents from executing, but blocks that agent's subsequent merges until fixed.
 
 ## Rebase Conflict Resolution
 
-When `git rebase $merge_branch` encounters conflicts, use the following process:
+When `git rebase $merge_branch` encounters conflicts:
 
 ### Why LLM for Conflicts?
 
-Large language models excel at resolving Git conflicts because they understand semantics:
-- Can analyze what changed in base vs what the subagent changed
-- Can intelligently merge non-conflicting parts
-- Can resolve most simple conflicts automatically (70-80%)
-- Only complex semantic conflicts require human judgment
+LLMs excel at resolving Git conflicts because they understand semantics: can analyze changes in base vs subagent, merge non-conflicting parts, and resolve most simple conflicts automatically (70-80%). Only complex semantic conflicts require human judgment.
 
 ### Resolution Flow
 
@@ -249,21 +168,16 @@ Large language models excel at resolving Git conflicts because they understand s
 3. If auto-resolution succeeds → continue normal flow
 ```
 
-### Escalation: When Auto-Resolution Fails
+### Escalation
 
 If the conflict is too complex for automatic resolution:
 
-1. `git rebase --abort` — rollback to state before rebase attempt
+1. `git rebase --abort` — rollback
 2. Present conflict details to user
 3. Explain why automatic resolution failed
-4. User makes decision:
-   - Manually resolve themselves
-   - Provide additional context for retry
-   - Other approach
+4. User makes decision: manually resolve, provide context for retry, or other approach
 
-### Key Principle
-
-**Main agent coordinates; user decides on complex conflicts; LLM executes.**
+**Principle:** Main agent coordinates; user decides on complex conflicts; LLM executes.
 
 | Conflict Type | Action |
 |--------------|--------|
@@ -372,46 +286,28 @@ digraph process {
 
 | Gate | Location | Requirement |
 |------|----------|-------------|
-| **GATE 1: Branch Check + Merge Worktree** | BEFORE starting levels (includes Git repo validation) | If on main/master → **auto-create development branch** (feature/bugfix based on plan name). Create merge worktree from development branch. All tasks merge back to this merge branch. |
+| **GATE 1: Branch Check + Merge Worktree** | BEFORE starting levels | If on main/master → auto-create dev branch. Create merge worktree from dev branch. |
 | **GATE 2: TDD** | Implementer phase | MUST invoke `nbl.test-driven-development` skill |
-| **GATE 3: Built-In Self-Review** | Implementer phase | Each implementer MUST perform two-stage self-review before reporting DONE |
-| **GATE 4: Global Spec Review** | After all levels complete | MUST invoke spec reviewer on all merged changes |
+| **GATE 3: Built-In Self-Review** | Implementer phase | Two-stage self-review before reporting DONE |
+| **GATE 4: Global Spec Review** | After all levels | MUST invoke spec reviewer on all merged changes |
 | **GATE 5: Global Quality Review** | After global spec review | MUST invoke code quality reviewer on all merged changes |
-
-**Note:** Create one merge worktree at startup from the base development branch. Each task in each level creates its own isolated worktree from the merge worktree, completes, merges back, and is cleaned up. After all tasks complete, the merge worktree contains all changes and `finishing-a-development-branch` is invoked to present options to the user.
 
 ## Model Selection
 
-Use the least powerful model that can handle each role to conserve cost and increase speed.
+Use the least powerful model that can handle each role:
 
-**Mechanical implementation tasks** (isolated functions, clear specs, 1-2 files): use a fast, cheap model. Most implementation tasks are mechanical when the plan is well-specified.
-
-**Integration and judgment tasks** (multi-file coordination, pattern matching, debugging): use a standard model.
-
-**Architecture, design, and review tasks**: use the most capable available model.
-
-**Task complexity signals:**
-- Touches 1-2 files with a complete spec → cheap model
-- Touches multiple files with integration concerns → standard model
-- Requires design judgment or broad codebase understanding → most capable model
+- **Mechanical tasks** (1-2 files, clear specs) → fast, cheap model
+- **Integration tasks** (multi-file, pattern matching) → standard model
+- **Architecture/review tasks** → most capable model
 
 ## Handling Implementer Status
 
-Implementer subagents report one of four statuses. Handle each appropriately:
+- **DONE:** Completed + passed two-stage self-review. Mark complete, proceed to rebase/merge.
+- **DONE_WITH_CONCERNS:** Completed but flagged doubts. Read concerns; address correctness/scope issues before merging.
+- **NEEDS_CONTEXT:** Missing information. Provide context and re-dispatch.
+- **BLOCKED:** Cannot complete. Assess: provide context → upgrade model → break into smaller tasks → escalate to human.
 
-**DONE:** Implementer completed the work **and** passed built-in two-stage self-review with all issues fixed. Mark task complete and proceed to rebase/merge.
-
-**DONE_WITH_CONCERNS:** The implementer completed the work but flagged doubts. Read the concerns before proceeding. If the concerns are about correctness or scope, address them before merging. If they're observations (e.g., "this file is getting large"), note them and proceed.
-
-**NEEDS_CONTEXT:** The implementer needs information that wasn't provided. Provide the missing context and re-dispatch.
-
-**BLOCKED:** The implementer cannot complete the task. Assess the blocker:
-1. If it's a context problem, provide more context and re-dispatch with the same model
-2. If the task requires more reasoning, re-dispatch with a more capable model
-3. If the task is too large, break it into smaller pieces
-4. If the plan itself is wrong, escalate to the human
-
-**Never** ignore an escalation or force the same model to retry without changes. If the implementer said it's stuck, something needs to change.
+**Never** ignore an escalation or force the same model to retry without changes.
 
 ## Prompt Templates
 
@@ -420,69 +316,22 @@ Prompt templates are shared with serial subagent-driven-development:
 - `../nbl.subagent-driven-development/spec-reviewer-prompt.md` - Dispatch spec compliance reviewer subagent
 - `../nbl.subagent-driven-development/code-quality-reviewer-prompt.md` - Dispatch code quality reviewer subagent
 
-## Advantages
+## Red Flags (Never Do This)
 
-**vs. Manual execution:**
-- Subagents follow TDD naturally
-- Fresh context per task (no confusion)
-- Parallel-safe (subagents don't interfere)
-- Subagent can ask questions (before AND during work)
-
-**vs. Executing Plans (main agent):**
-- Subagents execute (isolated context)
-- Continuous progress (no waiting)
-- Review checkpoints automatic
-
-**Efficiency gains:**
-- No file reading overhead (controller provides full text)
-- Controller curates exactly what context is needed
-- Subagent gets complete information upfront
-- Questions surfaced before work begins (not after)
-- Parallel tasks complete faster
-
-**Quality gates:**
-- Implementer finds and fixes issues before returning to main agent
-- Two-stage review still happens (just inside the implementer)
-- Final global review ensures quality across all changes
-- Same quality guarantees with fewer coordination steps
-
-**Efficiency:**
-- One subagent invocation per task (with built-in two-stage review)
-- Fewer round-trips between main agent and subagents
-- Faster overall execution because implementer fixes issues before returning
-- Catches issues early (cheaper than debugging later)
-
-## Red Flags
-
-**Never (NON-NEGOTIABLE):**
-- **Execute on main/master branch without explicit user consent**
-- **Dispatch an implementer without worktree isolation** (each task MUST have its own worktree, created via `nbl.using-git-worktrees` with taskId when dispatching)
-- **Accept DONE before built-in two-stage review completes** - MUST verify implementer performed both stages
-- **Skip TDD** - "implement first, test later" is forbidden
-
-**Never:**
-- Proceed with unfixed issues from self-review
+- Execute on main/master without user consent
+- Dispatch implementer without worktree isolation
+- Accept DONE before two-stage review completes
+- Skip TDD
+- Proceed with unfixed self-review issues
 - Make subagent read plan file (provide full text instead)
-- Skip scene-setting context (subagent needs to understand where task fits)
-- Ignore subagent questions (answer before letting them proceed)
+- Skip scene-setting context for subagent
+- Ignore subagent questions
 - Dispatch more than 5 agents simultaneously
-- Skip CR before merge
 - Merge without rebasing first
 - Proceed to next level with failed agents
-- Ignore rebase conflicts
-- Skip the final global two-stage review after all levels complete
+- Skip the final global two-stage review
 
-**If subagent asks questions:**
-- Answer clearly and completely
-- Provide additional context if needed
-- Don't rush them into implementation
-- **Parallel mode:** One question at a time to the user - other agents keep running while waiting
-
-**If global reviewer finds issues after all tasks complete:**
-- Dispatch fix subagent with specific instructions
-- Fix issues found by reviewers
-- Re-review after fixes
-- Don't try to fix manually (context pollution)
+If global reviewer finds issues: dispatch fix subagent with specific instructions → re-review after fixes. Don't fix manually (context pollution).
 
 ## Integration
 
