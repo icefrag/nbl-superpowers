@@ -113,11 +113,11 @@ fi
 #-------------------------------------------------------------------------------
 
 if [[ -d "$WORKTREE_PATH" ]]; then
-    if git worktree remove --force "$WORKTREE_PATH" 2>/dev/null; then
-        echo "✅ Worktree 已删除"
-    else
-        echo "⚠️  删除 worktree 失败，跳过"
+    if ! git worktree remove --force "$WORKTREE_PATH"; then
+        echo "❌ Worktree 删除失败，请检查上述错误后重试"
+        exit 1
     fi
+    echo "✅ Worktree 已删除"
 else
     echo "📂 Worktree 目录不存在，跳过删除"
 fi
