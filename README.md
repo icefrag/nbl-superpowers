@@ -1,8 +1,8 @@
 # nbl.superpowers - Claude Code 扩展技能集
 
-**nbl** = **niubility**（牛逼）—— 名字来源于中文俚语，意为"极其出色、非常厉害"。
-
 基于官方 [superpowers](https://github.com/obra/superpowers) 技能体系的扩展，重点增强了**多代理并行开发**和**隔离工作区**能力。
+
+同时整合了 [everything-claude-code](https://github.com/affaan-m/everything-claude-code) 项目中多个实用技能，提供开箱即用的完整开发工作流。
 
 ---
 
@@ -40,21 +40,22 @@
 
 ### 完整开发生命周期
 
-```mermaid
-flowchart TD
-    A[需求澄清<br/>nbl.brainstorming] --> B[输出设计文档]
-    B --> C[详细计划<br/>nbl.writing-plans]
-    C --> D[输出执行计划]
-    D --> E[创建隔离工作区<br/>nbl.using-git-worktrees]
-    E --> F{依赖关系?}
-    F -->|串行| G[subAgent 顺序执行]
-    F -->|并行| H[多 subAgent 并行执行]
-    G --> I[代码审查<br/>nbl.requesting-code-review]
-    H --> I
-    I --> J[修复问题<br/>nbl.receiving-code-review]
-    J --> K[人工审核确认]
-    K --> L[合并到主分支]
-    L --> M[清理 worktree<br/>nbl.finishing-a-development-branch]
+```
+需求澄清(nbl.brainstorming)
+  → 输出设计文档
+  → 详细计划(nbl.writing-plans)
+  → 创建隔离工作区(nbl.using-git-worktrees)
+
+if 任务存在依赖关系:
+  → subAgent 顺序执行(nbl.subagent-driven-development)
+else:
+  → 多 subAgent 并行执行(nbl.parallel-subagent-driven-development)
+
+  → 代码审查(nbl.requesting-code-review)
+  → 处理反馈(nbl.receiving-code-review)
+  → 人工审核确认
+  → 合并到主分支
+  → 清理 worktree(nbl.finishing-a-development-branch)
 ```
 
 ---
@@ -75,11 +76,11 @@ flowchart TD
 
 ## 🔄 更新方式
 
-<img width="600" height="300" alt="image" src="https://github.com/user-attachments/assets/8ae38a00-d2de-4d16-a9ef-ca16cadf5548" />
-<img width="600" height="300" alt="image" src="https://github.com/user-attachments/assets/23c7597b-fd15-4ff6-b729-ea4a0354c328" />
-<img width="600" height="300" alt="image" src="https://github.com/user-attachments/assets/bc13ca8f-8c07-4c78-8415-ef539d14f6f7" />
-<img width="600" height="300" alt="image" src="https://github.com/user-attachments/assets/98ed4f12-6f67-4364-afae-fe028cf06ff3" />
-<img width="600" height="300" alt="image" src="https://github.com/user-attachments/assets/a66194de-570e-415d-9cd0-6d1060db49f7" />
+<img width="300" height="150" alt="image" src="https://github.com/user-attachments/assets/8ae38a00-d2de-4d16-a9ef-ca16cadf5548" />
+<img width="300" height="150" alt="image" src="https://github.com/user-attachments/assets/23c7597b-fd15-4ff6-b729-ea4a0354c328" />
+<img width="300" height="150" alt="image" src="https://github.com/user-attachments/assets/bc13ca8f-8c07-4c78-8415-ef539d14f6f7" />
+<img width="300" height="150" alt="image" src="https://github.com/user-attachments/assets/98ed4f12-6f67-4364-afae-fe028cf06ff3" />
+<img width="300" height="150" alt="image" src="https://github.com/user-attachments/assets/a66194de-570e-415d-9cd0-6d1060db49f7" />
 
 ---
 
@@ -171,6 +172,7 @@ rules/
 | **安全审核** | 代码在 worktree 开发完成，人工审核后才合并到主分支 |
 | **多会话支持** | 支持同时打开多个 Claude Code 会话并行处理多个需求 |
 | **兼容官方** | 所有技能遵循官方 superpowers 设计原则，学习成本低 |
+| **生态整合** | 整合了 [everything-claude-code](https://github.com/affaan-m/everything-claude-code) 项目中精选的实用技能，如 `nbl.refactor-clean` 死代码清理、`nbl.tech-design` 技术文档生成、`nbl.test-coverage` 测试覆盖率分析等 |
 
 ---
 
