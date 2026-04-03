@@ -1,8 +1,8 @@
 # nbl.superpowers - Claude Code 扩展技能集
 
 基于官方 [superpowers](https://github.com/obra/superpowers) 技能体系的扩展，重点增强了**多代理并行开发**和**隔离工作区**能力。
-
 同时整合了 [everything-claude-code](https://github.com/affaan-m/everything-claude-code) 项目中精选的实用技能，如 `/refactor-clean` 死代码清理、`/test-coverage` 测试覆盖率分析
+
 ---
 
 ### 完整开发生命周期
