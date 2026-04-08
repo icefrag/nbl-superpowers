@@ -80,9 +80,6 @@ else:
 | **nbl.tech-design** | 根据需求生成技术设计文档 | 技术方案、API 设计、数据库设计 |
 | **nbl.deep-research** | 多源深度网络研究 | 需要调研收集信息 |
 | **nbl.status-line** | 自定义 Claude Code 状态栏 | 安装显示模型 / Git / 上下文 / 成本 / worktree 信息 |
-| **nbl.update-rules** | 管理更新 `rules/common/` 规则文件 | 修改编码规范 |
-| **nbl.writing-skills** | 辅助创建和修改新技能 | 开发自定义 skill |
-| **nbl.test-driven-development** | 测试驱动开发工作流 | 新功能开发、Bug 修复 |
 
 ---
 
