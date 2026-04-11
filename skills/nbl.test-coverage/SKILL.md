@@ -120,7 +120,7 @@ rules:
 ### 测试生成规则
 
 - **Service/Manager/Utils**：单元测试放在 `src/test/java/.../`
-- **Controller**：集成测试放在 `src/test/java/.../controller/`
+- **Controller**：集成测试放在 `src/test/java/.../controller/`，使用 nbl.java-spring-integration-testing skill 编写
 - 使用项目现有的测试模式（import风格、断言库、Mock方式）
 - Mock外部依赖（数据库、外部API、文件系统）
 - 每个测试应该独立 — 测试之间不共享可变状态
