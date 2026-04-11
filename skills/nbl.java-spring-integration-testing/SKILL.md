@@ -55,7 +55,7 @@ class DepartmentControllerTest {
 
 ### 依赖注入
 
-> **注意：** 测试类中使用 `@Autowired` 是标准做法（生产代码应使用 `@RequiredArgsConstructor` + `final` 字段）。测试类不由 Spring 容器管理构造函数，因此字段注入是唯一选择。
+> **注意：** 测试类中使用 `@Autowired` 是标准做法（生产代码应使用 `@RequiredArgsConstructor` + `final` 字段）。
 
 ```java
 @Autowired
@@ -69,22 +69,14 @@ private DepartmentMapper departmentMapper;
 
 @Autowired
 private DepartmentBusinessRelationMapper departmentBusinessRelationMapper;
-
-@Autowired
-private DepartmentUserRelationMapper departmentUserRelationMapper;
 ```
 
 ### 测试数据常量
 
 ```java
 private static final Long TEST_TENANT_ID = 1L;
-private static final Long TEST_SCHOOL_ID_1 = 100L;
-private static final Long TEST_SCHOOL_ID_2 = 101L;
+private static final Long TEST_SCHOOL_ID = 100L;
 private static final Long OPERATOR_ID = 1L;
-private static final Long LEADER_USER_ID = 200L;
-private static final Long MEMBER_USER_ID_1 = 201L;
-private static final Long MEMBER_USER_ID_2 = 202L;
-private static final Long LEARNING_AREA_ID = 300L;
 ```
 
 ## Complete CRUD Example
@@ -92,149 +84,87 @@ private static final Long LEARNING_AREA_ID = 300L;
 ```java
 @Test
 void testCRUD() throws Exception {
-    // 1. Create - 创建父部门
-    String parentName = "测试父部门-" + System.currentTimeMillis();
-    DepartmentInsertReq parentReq = DepartmentInsertReq.builder()
-            .name(parentName)
-            .deptType(DepartmentTypeEnum.DEPARTMENT)
-            .schoolIds(List.of(TEST_SCHOOL_ID_1, TEST_SCHOOL_ID_2))
-            .parentId(0L)
-            .leaderUserIds(List.of(LEADER_USER_ID))
-            .memberUserIds(List.of(MEMBER_USER_ID_1, MEMBER_USER_ID_2))
-            .intro("父部门用于容纳子部门")
-            .build();
-    parentReq.setTenantId(TEST_TENANT_ID);
-    parentReq.setOperatorId(OPERATOR_ID);
-
-    mockMvc.perform(post("/departments/insert")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(objectMapper.writeValueAsString(parentReq)))
-            .andExpect(status().isOk());
-
-    Department parentDept = departmentMapper.selectOne(
-            new LambdaQueryWrapper<Department>()
-                    .eq(Department::getTenantId, TEST_TENANT_ID)
-                    .eq(Department::getName, parentName)
-                    .last("LIMIT 1")
-    );
-    assertNotNull(parentDept, "父部门创建后应该存在于数据库");
-    assertEquals(0L, parentDept.getParentId(), "父部门的parentId应该为0");
-
-    // 验证父部门校区关系
-    List<DepartmentBusinessRelation> parentSchoolRelations =
-            departmentBusinessRelationMapper.selectByDepartmentIdAndType(
-                    parentDept.getId(), DepartmentBusinessTypeEnum.SCHOOL);
-    assertEquals(2, parentSchoolRelations.size(), "父部门应该关联2个校区");
-
-    // 验证父部门人员关系
-    List<DepartmentUserRelation> parentUserRelations =
-            departmentUserRelationMapper.listByDepartmentId(parentDept.getId());
-    assertEquals(3, parentUserRelations.size(), "父部门应该有3个人员关系");
-    Map<Integer, Long> memberCounts = parentUserRelations.stream()
-            .collect(Collectors.groupingBy(r -> r.getMemberType().getCode(), Collectors.counting()));
-    assertEquals(1, memberCounts.getOrDefault(MemberTypeEnum.LEADER.getCode(), 0L), "应该有1个负责人");
-    assertEquals(2, memberCounts.getOrDefault(MemberTypeEnum.MEMBER.getCode(), 0L), "应该有2个成员");
-
-    // 2. Create - 创建子部门（后续会删除）
-    String childName = "测试子部门-" + System.currentTimeMillis();
-    String updatedName = "测试子部门-已更新-" + System.currentTimeMillis();
-
+    // ========== 1. Create ==========
+    String deptName = "测试部门-" + System.currentTimeMillis();
     DepartmentInsertReq insertReq = DepartmentInsertReq.builder()
-            .name(childName)
-            .deptType(DepartmentTypeEnum.TEACHING_RESEARCH_GROUP)
-            .schoolIds(List.of(TEST_SCHOOL_ID_1, TEST_SCHOOL_ID_2))
-            .parentId(parentDept.getId())
-            .leaderUserIds(List.of(LEADER_USER_ID))
-            .memberUserIds(List.of(MEMBER_USER_ID_1))
-            .intro("这是一个测试子部门")
+            .name(deptName)
+            .deptType(DepartmentTypeEnum.DEPARTMENT)
+            .schoolIds(List.of(TEST_SCHOOL_ID))
+            .parentId(0L)
+            .intro("测试部门介绍")
             .build();
     insertReq.setTenantId(TEST_TENANT_ID);
     insertReq.setOperatorId(OPERATOR_ID);
 
-    mockMvc.perform(post("/departments/insert")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(objectMapper.writeValueAsString(insertReq)))
-            .andExpect(status().isOk());
+    performPost("/departments/insert", insertReq);
 
-    // 查询验证子部门创建成功
-    Department childDept = departmentMapper.selectOne(
+    // 验证主表字段
+    Department dept = departmentMapper.selectOne(
             new LambdaQueryWrapper<Department>()
                     .eq(Department::getTenantId, TEST_TENANT_ID)
-                    .eq(Department::getName, childName)
+                    .eq(Department::getName, deptName)
                     .last("LIMIT 1")
     );
-
-    assertNotNull(childDept, "新增后子部门应该存在于数据库");
-    assertEquals(childName, childDept.getName());
-    assertEquals(TEST_TENANT_ID, childDept.getTenantId());
-    assertEquals(DepartmentTypeEnum.TEACHING_RESEARCH_GROUP, childDept.getDeptType());
-    assertEquals(parentDept.getId(), childDept.getParentId(), "子部门parentId错误");
+    assertNotNull(dept, "部门创建后应存在于数据库");
+    assertEquals(deptName, dept.getName());
+    assertEquals(TEST_TENANT_ID, dept.getTenantId());
+    assertEquals(DepartmentTypeEnum.DEPARTMENT, dept.getDeptType());
 
     // 验证关联表
-    List<DepartmentBusinessRelation> childSchoolRelations =
-            departmentBusinessRelationMapper.selectByDepartmentIdAndType(
-                    childDept.getId(), DepartmentBusinessTypeEnum.SCHOOL);
-    assertEquals(2, childSchoolRelations.size(), "子部门应该关联2个校区");
+    assertRelationCount(dept.getId(), DepartmentBusinessTypeEnum.SCHOOL, 1);
 
-    List<DepartmentUserRelation> childUserRelations =
-            departmentUserRelationMapper.listByDepartmentId(childDept.getId());
-    assertEquals(2, childUserRelations.size(), "子部门应该有2个人员关系");
-
-    // 4. GetById - 接口查询验证（只验证 HTTP 200，数据正确性已在数据库验证）
+    // ========== 2. Read (API) ==========
     mockMvc.perform(get("/departments/get-by-id")
-                    .param("id", childDept.getId().toString())
+                    .param("id", dept.getId().toString())
                     .param("tenantId", TEST_TENANT_ID.toString()))
             .andExpect(status().isOk());
 
-    // 5. Update - 更新子部门
+    // ========== 3. Update ==========
+    String updatedName = "更新后部门-" + System.currentTimeMillis();
     DepartmentUpdateReq updateReq = DepartmentUpdateReq.builder()
-            .id(childDept.getId())
+            .id(dept.getId())
             .name(updatedName)
-            .intro("这是更新后的测试部门介绍")
-            .schoolIds(List.of(TEST_SCHOOL_ID_1))  // 减少到1个校区
-            .parentId(parentDept.getId())
-            .leaderUserIds(List.of())
-            .memberUserIds(List.of())
+            .intro("更新后的介绍")
+            .schoolIds(List.of())  // 清空校区关联
             .build();
     updateReq.setTenantId(TEST_TENANT_ID);
     updateReq.setOperatorId(OPERATOR_ID);
 
-    mockMvc.perform(post("/departments/update")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(objectMapper.writeValueAsString(updateReq)))
-            .andExpect(status().isOk());
+    performPost("/departments/update", updateReq);
 
-    // 验证数据库更新
-    Department updatedDepartment = departmentMapper.selectById(childDept.getId());
-    assertNotNull(updatedDepartment);
-    assertEquals(updatedName, updatedDepartment.getName());
-    assertEquals("这是更新后的测试部门介绍", updatedDepartment.getIntro());
+    // 验证主表更新
+    Department updated = departmentMapper.selectById(dept.getId());
+    assertEquals(updatedName, updated.getName());
+    assertEquals("更新后的介绍", updated.getIntro());
 
-    // 验证关联表更新（减少到1个校区）
-    List<DepartmentBusinessRelation> updatedSchoolRelations =
-            departmentBusinessRelationMapper.selectByDepartmentIdAndType(
-                    childDept.getId(), DepartmentBusinessTypeEnum.SCHOOL);
-    assertEquals(1, updatedSchoolRelations.size(), "更新后应该关联1个校区");
+    // 验证关联表变化
+    assertRelationCount(dept.getId(), DepartmentBusinessTypeEnum.SCHOOL, 0);
 
-    // 验证人员关系清空
-    List<DepartmentUserRelation> updatedUserRelations =
-            departmentUserRelationMapper.listByDepartmentId(childDept.getId());
-    assertEquals(0, updatedUserRelations.size(), "更新后人员关系应该清空");
-
-    // 6. Delete - 删除子部门
+    // ========== 4. Delete ==========
     IdsTenantReq deleteReq = IdsTenantReq.builder()
-            .ids(List.of(childDept.getId()))
+            .ids(List.of(dept.getId()))
             .build();
     deleteReq.setTenantId(TEST_TENANT_ID);
 
-    mockMvc.perform(post("/departments/batch-delete")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(objectMapper.writeValueAsString(deleteReq)))
-            .andExpect(status().isOk());
+    performPost("/departments/batch-delete", deleteReq);
 
-    // 验证删除成功（逻辑删除，MyBatis-Plus 自动过滤）
-    Department deletedDepartment = departmentMapper.selectById(childDept.getId());
-    assertNull(deletedDepartment, "删除后子部门查询应该不存在");
+    // 验证删除（逻辑删除，MyBatis-Plus 自动过滤）
+    assertNull(departmentMapper.selectById(dept.getId()), "删除后应查询不到");
+}
+
+// ==================== 辅助方法 ====================
+
+private ResultActions performPost(String url, Object req) throws Exception {
+    return mockMvc.perform(post(url)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(objectMapper.writeValueAsString(req)))
+            .andExpect(status().isOk());
+}
+
+private void assertRelationCount(Long deptId, DepartmentBusinessTypeEnum type, int expected) {
+    List<DepartmentBusinessRelation> relations =
+            departmentBusinessRelationMapper.selectByDepartmentIdAndType(deptId, type);
+    assertEquals(expected, relations.size());
 }
 ```
 
@@ -282,42 +212,23 @@ void testCRUD() throws Exception {
 - 不能只验证 HTTP 状态码，必须通过数据库查询验证每个字段
 - 示例：
 ```java
-assertEquals(childName, childDept.getName());
-assertEquals(TEST_TENANT_ID, childDept.getTenantId());
-assertEquals(DepartmentTypeEnum.TEACHING_RESEARCH_GROUP, childDept.getDeptType());
-assertEquals(parentDept.getId(), childDept.getParentId(), "子部门parentId错误");
+assertNotNull(dept, "部门创建后应存在于数据库");
+assertEquals(deptName, dept.getName());
+assertEquals(TEST_TENANT_ID, dept.getTenantId());
+assertEquals(DepartmentTypeEnum.DEPARTMENT, dept.getDeptType());
 ```
 
 ## Best Practices for Reducing Boilerplate
 
-### Extract Helper Methods
-
-在实际项目中，为了减少重复代码，可以提取通用的 helper 方法：
+对于多个关联表，可以继续提取辅助方法。示例中已展示 `performPost` 和 `assertRelationCount`，如果你的项目需要多个 helper，可以继续提取类似方法：
 
 ```java
-// 封装 POST 请求
-private ResultActions performPost(String url, Object req) throws Exception {
-    return mockMvc.perform(post(url)
-            .contentType(MediaType.APPLICATION_JSON)
-            .content(objectMapper.writeValueAsString(req)))
-            .andExpect(status().isOk());
-}
-
-// 封装关系表验证
-private void assertRelationCount(Long deptId, DepartmentBusinessTypeEnum type, int expectedSize) {
-    List<DepartmentBusinessRelation> relations =
-            departmentBusinessRelationMapper.selectByDepartmentIdAndType(deptId, type);
-    assertEquals(expectedSize, relations.size());
-}
-
 // 批量设置 tenantId 和 operatorId
 private void setTestContext(BaseReq req) {
     req.setTenantId(TEST_TENANT_ID);
     req.setOperatorId(OPERATOR_ID);
 }
 ```
-
-这样可以大幅减少重复的 `mockMvc.perform` 和 `setTenantId/setOperatorId` 代码。
 
 ## Imports 参考
 
@@ -334,7 +245,6 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.test.web.servlet.MockMvc;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
-import java.util.stream.Collectors;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.junit.jupiter.api.Assertions.*;
