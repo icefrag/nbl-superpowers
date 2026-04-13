@@ -94,7 +94,7 @@ Level 2: ...                  # Depends on Level 1
 
 ```
 For each level:
-    ├── Create worktrees for tasks in this level (max 5 per batch)
+    ├── Create worktrees for tasks in this level (max 2 per batch)
     │   For each task, invoke **nbl.using-git-worktrees** skill with:
     │   - Base name: `<base_name>`
     │   - Task id: `<task_id>`
@@ -207,7 +207,7 @@ digraph process {
     subgraph cluster_level_loop {
         label="For Each Level (Sequential)";
         style=filled fillcolor=lightyellow;
-        "Create worktrees for tasks in this level (max 5)" [shape=box style=filled fillcolor=lightpink];
+        "Create worktrees for tasks in this level (max 2)" [shape=box style=filled fillcolor=lightpink];
         "Dispatch N implementers (each with built-in two-stage review)" [shape=box style=filled fillcolor=lightblue];
     }
 
@@ -250,7 +250,7 @@ digraph process {
 
     // Setup flow
     "Read plan, extract all tasks with full text, note context, create TodoWrite" -> "Analyze dependencies → Build levels";
-    "Analyze dependencies → Build levels" -> "Create worktrees for tasks in this level (max 5)";
+    "Analyze dependencies → Build levels" -> "Create worktrees for tasks in this level (max 2)";
     "Create worktrees for tasks in this level (max 5)" -> "Dispatch N implementers (each with built-in two-stage review)";
 
     // Pipeline processing
@@ -275,12 +275,12 @@ digraph process {
 }
 ```
 
-### Batch Handling for 6+ Tasks
+### Batch Handling for 3+ Tasks
 
 | Tasks in Level | Approach |
 |----------------|----------|
-| **2-5 tasks** | Single batch, all agents in parallel |
-| **6+ tasks** | Split into batches of 5, process batch by batch |
+| **2 tasks** | Single batch, all agents in parallel |
+| **3+ tasks** | Split into batches of 2, process batch by batch |
 
 ### Process Gates Summary
 
@@ -326,7 +326,7 @@ Prompt templates are shared with serial subagent-driven-development:
 - Make subagent read plan file (provide full text instead)
 - Skip scene-setting context for subagent
 - Ignore subagent questions
-- Dispatch more than 5 agents simultaneously
+- Dispatch more than 2 agents simultaneously
 - Merge without rebasing first
 - Proceed to next level with failed agents
 - Skip the final global two-stage review
