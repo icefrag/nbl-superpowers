@@ -251,7 +251,7 @@ Add to plan document footer:
 
 ## Execution Handoff
 
-After saving and self-reviewing the plan, assess complexity then analyze task dependencies to determine execution mode and automatically invoke the corresponding skill.
+After saving and self-reviewing the plan, assess complexity then analyze task dependencies to determine the recommended execution mode. Then present all three options to the user for selection.
 
 ### Mode Decision
 
@@ -260,6 +260,18 @@ After saving and self-reviewing the plan, assess complexity then analyze task de
 | `inline` | Low complexity (small change, clear scope, no exploration needed) | `nbl.executing-plans` |
 | `serial` | Tasks form a chain (each depends on previous), complex work | `nbl.subagent-driven-development` |
 | `parallel` | Multiple independent tasks exist, complex work | `nbl.parallel-subagent-driven-development` |
+
+### User Choice
+
+After determining the recommended mode, present all three options using AskUserQuestion:
+
+> "Plan complete and saved to `docs/nbl/plans/<filename>.md`. Three execution options:"
+>
+> 1. **inline** — 在当前会话中直接执行，无子代理
+> 2. **serial** — 通过子代理串行执行，任务间有依赖
+> 3. **parallel** — 通过子代理并行执行，任务间独立
+>
+> The recommended mode (determined by dependency analysis) should be marked as "推荐 (Recommended)".
 
 ### Handoff Actions
 
@@ -274,15 +286,3 @@ After saving and self-reviewing the plan, assess complexity then analyze task de
 **Parallel mode:**
 - Invoke `nbl.parallel-subagent-driven-development` skill
 - Parallel task execution based on dependency levels
-
-### Announcement Format
-
-After determining the mode:
-
-> "Plan complete and saved to `docs/nbl/plans/<filename>.md`.
->
-> **Execution Mode:** inline | serial | parallel
->
-> Invoking `<skill-name>` to execute the plan."
-
-Invoke the corresponding execution skill immediately.
