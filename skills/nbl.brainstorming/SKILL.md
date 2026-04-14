@@ -127,15 +127,15 @@ Wait for the user's response. If they request changes, make them and re-run the 
 
 - Invoke the writing-plans skill to create a detailed implementation plan
 - Receive execution mode from writing-plans: `{ mode: "inline" | "serial" | "parallel", plan_path: "..." }`
-- **Automatically invoke the appropriate execution skill** based on mode:
+- **Present execution mode options to the user** using AskUserQuestion, with the writing-plans recommended mode marked as "推荐 (Recommended)":
 
-| Mode | Skill to Invoke |
-|------|----------------|
-| `inline` | `nbl.executing-plans` |
-| `serial` | `nbl.subagent-driven-development` |
-| `parallel` | `nbl.parallel-subagent-driven-development` |
+| Mode | Skill | Description |
+|------|-------|-------------|
+| `inline` | `nbl.executing-plans` | 在当前会话中直接执行，无子代理 |
+| `serial` | `nbl.subagent-driven-development` | 通过子代理串行执行，任务间有依赖 |
+| `parallel` | `nbl.parallel-subagent-driven-development` | 通过子代理并行执行，任务间独立 |
 
-**No user interaction required for execution mode selection.** The mode is determined programmatically from task dependencies.
+- Invoke the user-selected execution skill with the plan_path
 
 ## Key Principles
 
