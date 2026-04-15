@@ -117,8 +117,6 @@ skills/
 ├── nbl.tech-design/                 # 技术设计文档生成
 ├── nbl.deep-research/               # 多源深度研究
 ├── nbl.status-line/                 # 自定义状态栏
-├── nbl.edit-rules/                  # 规则文件编辑
-├── nbl.install-rules/               # 从远程安装规则文件
 ├── nbl.writing-skills/              # 技能开发工具
 └── nbl.test-driven-development/     # 测试驱动开发
 
