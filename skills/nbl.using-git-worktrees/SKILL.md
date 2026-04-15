@@ -33,34 +33,38 @@ Invoke via skill command:
 
 ### Naming Formats
 
-| Mode | Branch Name | Worktree Path |
-|------|-------------|---------------|
-| Single | `feature/{name}` | `.worktrees/{name}` |
-| **Merge** | `feature/{name}-merge` | `.worktrees/{name}-merge` |
-| Parallel Task | `feature/{name}-task{id}` | `.worktrees/{name}-task{id}` |
+| Mode | Branch Name | Worktree Path | Base Branch |
+|------|-------------|---------------|-------------|
+| **Work (Serial)** | `feature/{name}-work` | `.worktrees/{name}-work` | `feature/{name}` |
+| **Merge** | `feature/{name}-merge` | `.worktrees/{name}-merge` | `feature/{name}` |
+| Parallel Task | `feature/{name}-task{id}` | `.worktrees/{name}-task{id}` | `feature/{name}-merge` |
 
 ## Usage
 
-### Single Worktree (Sequential Mode)
+### Work Worktree (Serial Mode)
+
+基于主开发分支创建工作 worktree：
 
 ```bash
-./skills/nbl.using-git-worktrees/scripts/create-worktree.sh <base_name>
+./skills/nbl.using-git-worktrees/scripts/create-worktree.sh "<name>-work" --parent "feature/<name>"
 ```
 
 ### Merge Worktree (Parallel Mode Intermediate Buffer)
 
-**Same usage as Single Worktree** - just use base name ending with `-merge`.
+基于主开发分支创建 merge worktree：
 
 ```bash
-./skills/nbl.using-git-worktrees/scripts/create-worktree.sh "<name>-merge"
+./skills/nbl.using-git-worktrees/scripts/create-worktree.sh "<name>-merge" --parent "feature/<name>"
 ```
 
 ### Parallel Worktree (Parallel Mode Tasks)
 
+基于 merge 分支创建 task worktree：
+
 ```bash
 # Create multiple worktrees for parallel tasks
 for task_id in 1 2 3; do
-    ./skills/nbl.using-git-worktrees/scripts/create-worktree.sh <base_name> $task_id
+    ./skills/nbl.using-git-worktrees/scripts/create-worktree.sh <base_name> --parent "feature/<base_name>-merge" $task_id
 done
 ```
 
