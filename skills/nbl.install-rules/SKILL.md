@@ -25,24 +25,25 @@ curl -s "https://api.github.com/repos/icefrag/nbl-superpowers/git/trees/main?rec
 - `type` 为 `blob`
 - 收集所有匹配的文件路径
 
-### 2. 逐个下载文件内容
+### 2. 逐个下载并写入文件
 
-对每个匹配的文件，通过 raw URL 下载内容：
+对每个匹配的文件，通过 GitHub Contents API 获取内容并解码写入：
 
+**注意**：禁止使用 `raw.githubusercontent.com`，该域名在 Windows Schannel 下会因 SSL 重协商失败。
+
+对每个文件执行以下命令（将 `{path}` 替换为文件路径如 `rules/common/architecture.md`，`{relative_path}` 替换为 `rules/` 之后的部分如 `common/architecture.md`）：
+
+```bash
+curl -s "https://api.github.com/repos/icefrag/nbl-superpowers/contents/{path}" | python -c "import json,sys,base64,os; d=json.load(sys.stdin); p=os.path.expanduser('~/.claude/rules/{relative_path}'); os.makedirs(os.path.dirname(p),exist_ok=True); open(p,'wb').write(base64.b64decode(d['content'])); print('OK: {relative_path} (' + str(d['size']) + ' bytes)')"
 ```
-https://raw.githubusercontent.com/icefrag/nbl-superpowers/main/{path}
-```
 
-### 3. 写入本地文件
+写入规则：
 
-将下载的内容写入 `~/.claude/rules/` 目录，**保留目录结构**：
-
-- 截取 `path` 中 `rules/` 之后的部分作为相对路径
 - 目标路径：`~/.claude/rules/{相对路径}`
 - 自动创建不存在的子目录
 - 已存在的文件直接覆盖
 
-### 4. 输出同步报告
+### 3. 输出同步报告
 
 向用户展示同步结果：
 
