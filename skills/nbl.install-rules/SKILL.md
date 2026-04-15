@@ -1,13 +1,13 @@
 ---
-name: nbl.sync-rules
+name: nbl.install-rules
 description: >
-  从 GitHub 仓库同步最新规则文件到本地 ~/.claude/rules/ 目录。
-  触发条件：用户请求同步规则、更新远程规则到本地。
+  从 GitHub 仓库安装最新规则文件到本地 ~/.claude/rules/ 目录。
+  触发条件：用户请求安装规则、从远程更新本地规则。
 ---
 
-# Sync Rules Skill
+# Install Rules Skill
 
-从 GitHub 仓库 `icefrag/nbl-superpowers` 的 `rules/` 目录同步所有规则文件到本地 `~/.claude/rules/`，存在则覆盖。
+从 GitHub 仓库 `icefrag/nbl-superpowers` 的 `rules/` 目录安装所有规则文件到本地 `~/.claude/rules/`，存在则覆盖。
 
 ## 执行流程
 

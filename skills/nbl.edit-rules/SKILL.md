@@ -1,11 +1,11 @@
 ---
-name: nbl.update-rules
+name: nbl.edit-rules
 description: >
-  管理 rules/common/ 目录下规则文件的更新，确保版本追踪和依赖一致性。
-  触发条件：用户请求更新规则、修改编码规范。
+  管理 rules/common/ 目录下规则文件的编辑，确保版本追踪和依赖一致性。
+  触发条件：用户请求修改规则、修改编码规范。
 ---
 
-# Update Rules Skill
+# Edit Rules Skill
 
 管理 `rules/common/` 目录下规则文件的更新，确保版本追踪和依赖一致性。
 
