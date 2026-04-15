@@ -30,19 +30,21 @@ cd_to_git_root
 
 usage() {
     cat <<EOF
-用法: $(basename "$0") <base_name> [task_id] [output_file]
+用法: $(basename "$0") <base_name> [--parent <branch>] [task_id] [output_file]
 
 创建或恢复一个 git worktree。
 
 参数:
   base_name    功能名称 (例如: user-auth)
+  --parent     可选，指定新分支的基分支（默认基于当前 HEAD）
   task_id      可选，parallel 模式的任务 ID
   output_file  可选，输出 JSON 结果到文件
 
 示例:
   $(basename "$0") user-auth
-  $(basename "$0") user-auth 1
-  $(basename "$0") user-auth 1 /tmp/result.json
+  $(basename "$0") user-auth --parent feature/user-auth
+  $(basename "$0") user-auth --parent feature/user-auth-merge 1
+  $(basename "$0") user-auth --parent feature/user-auth 1 /tmp/result.json
 EOF
 }
 
@@ -55,18 +57,28 @@ fi
 BASE_NAME="$1"
 TASK_ID=""
 OUTPUT_FILE=""
+PARENT_BRANCH=""
 
 shift
 while [[ $# -gt 0 ]]; do
     case "$1" in
+        --parent)
+            if [[ -z "${2:-}" ]]; then
+                echo "❌ --parent 需要指定分支名"
+                exit 1
+            fi
+            PARENT_BRANCH="$2"
+            shift 2
+            ;;
         [0-9]*)
             TASK_ID="$1"
+            shift
             ;;
         *)
             OUTPUT_FILE="$1"
+            shift
             ;;
     esac
-    shift
 done
 
 # 计算分支名和路径
@@ -93,7 +105,12 @@ prepare_worktrees_dir
 
 IS_NEW=false
 
-if git worktree add "$WORKTREE_PATH" -b "$BRANCH_NAME" 2>/dev/null; then
+CREATE_ARGS=("$WORKTREE_PATH" -b "$BRANCH_NAME")
+if [[ -n "$PARENT_BRANCH" ]]; then
+    CREATE_ARGS+=("$PARENT_BRANCH")
+fi
+
+if git worktree add "${CREATE_ARGS[@]}" 2>/dev/null; then
     echo "✅ 新建 worktree 成功"
     IS_NEW=true
     MESSAGE="Created new worktree"
