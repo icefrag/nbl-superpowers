@@ -174,6 +174,23 @@ public User getUserByGzId(String gzId) {
   - `getCodeByDesc()`: 根据desc描述获取枚举的code值
 - **禁止**: 枚举类内部提供静态工具方法，手动遍历枚举values()来查找对应的枚举实例
 
+## 禁止魔术数字 (NON-NEGOTIABLE)
+
+- **必须**: Mapper 查询条件中的类型、状态等值使用对应的枚举常量，禁止硬编码数字
+- **适用范围**: type、enabled、selected 等所有具有业务含义的数值字段
+
+```java
+// 正确
+.eq(GeneralQuality::getType, GeneralQualityTypeEnum.NATIONAL.getCode())
+.eq(GeneralQuality::getEnabled, EnabledEnum.ENABLED.getCode())
+EnabledEnum.ENABLED.getCode().equals(item.getEnabled())
+
+// 错误
+.eq(GeneralQuality::getType, 1)
+.eq(GeneralQuality::getEnabled, 1)
+Integer.valueOf(1).equals(item.getEnabled())
+```
+
 ## 业务异常处理规范 (NON-NEGOTIABLE)
 
 - **禁止**: 在代码中手动抛出RuntimeException及其子类
