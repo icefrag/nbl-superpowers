@@ -257,6 +257,30 @@ private Date createTime;
   - `requiredMode`: 根据JSR-303校验注解确定
   - 禁止使用已废弃的`required`属性
 
+## API 模型文档一致性规范 (NON-NEGOTIABLE)
+
+- **必须**: 修改 DTO / Req / Resp 等 API 模型字段时，`@Schema(description=...)` 与上方 Javadoc 注释必须保持内容一致，不可只改其一
+- **适用场景**:
+  - 新增枚举值导致描述范围扩大（如 category 字段新增枚举类型）
+  - 修改字段含义导致描述需要更新
+  - 新增字段时同时编写 Javadoc 和 @Schema
+
+```java
+// 错误：Javadoc 与 @Schema 不一致
+/**
+ * 变更分类：DICT-字典配置，PERMISSION-权限点配置
+ */
+@Schema(description = "变更分类：DICT-字典配置，PERMISSION-权限点配置，GENERAL_QUALITY-通识素养配置", example = "DICT")
+private String category;
+
+// 正确：两者内容同步
+/**
+ * 变更分类：DICT-字典配置，PERMISSION-权限点配置，GENERAL_QUALITY-通识素养配置
+ */
+@Schema(description = "变更分类：DICT-字典配置，PERMISSION-权限点配置，GENERAL_QUALITY-通识素养配置", example = "DICT")
+private String category;
+```
+
 ## 非BFF服务 Req对象上下文字段规范 (NON-NEGOTIABLE)
 
 - **适用范围**: 除 `guozhi-edu-app` 和 `guozhi-ops-app`（BFF层）以外的所有内部微服务
