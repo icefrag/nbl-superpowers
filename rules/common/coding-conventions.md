@@ -152,6 +152,30 @@ public User getUserByGzId(String gzId) {
 }
 ```
 
+### 集合参数查询规范 (NON-NEGOTIABLE)
+
+- **必须**: Mapper 层使用 `.in()` 条件的方法，必须先检查集合参数是否为 null 或 empty
+- **原因**: MyBatis-Plus 的 `.in()` 传入空集合会生成无效 SQL（`WHERE id IN ()`），导致运行时异常
+
+```java
+// 正确
+default List<GeneralQuality> selectByTenantIdAndIds(Long tenantId, List<Long> ids) {
+    if (ids == null || ids.isEmpty()) {
+        return Collections.emptyList();
+    }
+    return selectList(new LambdaQueryWrapper<GeneralQuality>()
+            .eq(GeneralQuality::getTenantId, tenantId)
+            .in(GeneralQuality::getId, ids));
+}
+
+// 错误：缺少空集合防护
+default List<GeneralQuality> selectByTenantIdAndIds(Long tenantId, List<Long> ids) {
+    return selectList(new LambdaQueryWrapper<GeneralQuality>()
+            .eq(GeneralQuality::getTenantId, tenantId)
+            .in(GeneralQuality::getId, ids));
+}
+```
+
 ### 逻辑删除规范
 
 - MyBatis-Plus已全局启用逻辑删除插件，所有查询自动过滤已删除数据
