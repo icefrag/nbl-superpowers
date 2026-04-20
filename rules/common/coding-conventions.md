@@ -152,6 +152,35 @@ public User getUserByGzId(String gzId) {
 }
 ```
 
+### ID查询无需租户隔离 (NON-NEGOTIABLE)
+
+- **规则**: 通过主键 ID 或 ID 集合查询时，不需要附加 tenantId 条件
+- **原因**: 主键 ID 全局唯一，无需租户隔离；附加 tenantId 是冗余条件
+
+```java
+// 正确：通过ID查询，不需要tenantId
+default List<GeneralQuality> selectByIds(List<Long> ids) {
+    if (ids == null || ids.isEmpty()) {
+        return Collections.emptyList();
+    }
+    return selectList(new LambdaQueryWrapper<GeneralQuality>()
+            .in(GeneralQuality::getId, ids));
+}
+
+// 正确：通过ID查询单条
+default GeneralQuality selectById(Long id) {
+    return selectOne(new LambdaQueryWrapper<GeneralQuality>()
+            .eq(GeneralQuality::getId, id));
+}
+
+// 错误：ID查询附加了不必要的tenantId条件
+default List<GeneralQuality> selectByTenantIdAndIds(Long tenantId, List<Long> ids) {
+    return selectList(new LambdaQueryWrapper<GeneralQuality>()
+            .eq(GeneralQuality::getTenantId, tenantId)
+            .in(GeneralQuality::getId, ids));
+}
+```
+
 ### 集合参数查询规范 (NON-NEGOTIABLE)
 
 - **必须**: Mapper 层使用 `.in()` 条件的方法，必须先检查集合参数是否为 null 或 empty
@@ -159,19 +188,17 @@ public User getUserByGzId(String gzId) {
 
 ```java
 // 正确
-default List<GeneralQuality> selectByTenantIdAndIds(Long tenantId, List<Long> ids) {
+default List<GeneralQuality> selectByIds(List<Long> ids) {
     if (ids == null || ids.isEmpty()) {
         return Collections.emptyList();
     }
     return selectList(new LambdaQueryWrapper<GeneralQuality>()
-            .eq(GeneralQuality::getTenantId, tenantId)
             .in(GeneralQuality::getId, ids));
 }
 
 // 错误：缺少空集合防护
-default List<GeneralQuality> selectByTenantIdAndIds(Long tenantId, List<Long> ids) {
+default List<GeneralQuality> selectByIds(List<Long> ids) {
     return selectList(new LambdaQueryWrapper<GeneralQuality>()
-            .eq(GeneralQuality::getTenantId, tenantId)
             .in(GeneralQuality::getId, ids));
 }
 ```
