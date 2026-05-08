@@ -49,10 +49,11 @@ entity.setId(IdWorker.getId());
 
 ## 字段默认值
 
-除 text/json 外，所有字段 NOT NULL + DEFAULT：
-- 整数/小数：DEFAULT 0
-- 字符串：DEFAULT ''
-- 时间/text/json：可不设默认值
+- 有合理默认值的字段必须 NOT NULL + DEFAULT：
+  - 整数/小数：DEFAULT 0
+  - 字符串：DEFAULT ''
+- 字段为空本身有业务含义时允许 NULL（如生日、结束时间），不设默认值
+- text/json 类型不设默认值
 
 ## Entity定义
 
@@ -61,13 +62,13 @@ entity.setId(IdWorker.getId());
 
 ## 更新操作
 
-- 使用`updateById()`，必须new新对象（禁止复用查询结果），先设ID再设更新字段
+- 使用`update(Wrapper)`，通过`LambdaUpdateWrapper`设置更新字段和条件
+- 禁止`updateById()`
 
 ```java
-UserEntity user = new UserEntity();
-user.setId(userId);
-user.setName("newName");
-userMapper.updateById(user);
+userMapper.update(new LambdaUpdateWrapper<UserEntity>()
+    .eq(UserEntity::getId, userId)
+    .set(UserEntity::getName, "newName"));
 ```
 
 ## 查询操作
