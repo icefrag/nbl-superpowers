@@ -47,7 +47,9 @@ Before any task execution, these gates MUST pass:
 <NON_NEGOTIABLE>
 
 **CRITICAL RULE:**
-> **If you are in the primary working tree (`.git` is a directory)**, regardless of whether you are on `main`/`master` or already on a development branch, you **MUST** invoke `nbl.using-git-worktrees` to create an isolated sub-worktree before dispatching any implementer. **NO EXCEPTIONS.**
+> **If you are in the primary working tree (`.git` is a directory)**, regardless of whether you are on `main`/`master` or already on a development branch, you **MUST** invoke `nbl.using-git-worktrees` skill via the **Skill tool** (NOT the built-in `EnterWorktree` tool) to create an isolated sub-worktree before dispatching any implementer. **NO EXCEPTIONS.**
+
+> **NEVER** use the built-in `EnterWorktree` tool. It bypasses our worktree management conventions and scripts.
 
 > Primary working tree is for branch management only. ALL implementation tasks run in isolated sub-worktrees. Never implement directly in primary worktree.
 
@@ -85,7 +87,7 @@ STEP 4: If INSIDE_ADDED_WORKTREE = NO (in primary working tree):
     2. Checkout new development branch in primary working tree
 
   // CRITICAL: This step executes for BOTH main/master AND development branches!
-  INVOKE: `/nbl.superpowers:nbl.using-git-worktrees create <base-name-from-plan>-work --parent feature/<base-name-from-plan>`
+  INVOKE via **Skill tool** (NOT built-in EnterWorktree): `/nbl.superpowers:nbl.using-git-worktrees create <base-name-from-plan>-work --parent feature/<base-name-from-plan>`
   // After invocation, you will be inside the newly created worktree
   → GATE 1 PASSED → proceed to GATE 2
 ```
@@ -302,7 +304,7 @@ Done!
 ## Red Flags
 
 **Never (NON-NEGOTIABLE):**
-- **Start implementation without git worktree** - MUST invoke nbl.using-git-worktrees first
+- **Start implementation without git worktree** - MUST invoke nbl.using-git-worktrees via **Skill tool** first. **NEVER use built-in EnterWorktree.**
 - **Skip TDD** - "implement first, test later" is forbidden
 - **Accept DONE before built-in two-stage review completes** - MUST verify implementer performed both stages
 
