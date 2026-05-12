@@ -17,7 +17,7 @@ Execute plan by dispatching fresh subagent per task. Each implementer performs b
 
 | Check | Requirement |
 |-------|-------------|
-| **Worktree Isolation** | MUST create isolated merge worktree via `nbl.using-git-worktrees` before any dispatching. If in primary worktree (`.git` is a directory), invoke `nbl.using-git-worktrees` first. NEVER implement directly in primary worktree. |
+| **Worktree Isolation** | MUST create isolated merge worktree via `nbl.using-git-worktrees` **Skill tool** (NOT the built-in `EnterWorktree` tool) before any dispatching. If in primary worktree (`.git` is a directory), invoke `nbl.using-git-worktrees` first. NEVER implement directly in primary worktree. **NEVER use built-in EnterWorktree.** |
 | **TDD Required** | Every implementation task MUST invoke `nbl.test-driven-development` skill FIRST. Never write implementation before tests. |
 | **Two-Stage Self-Review** | Each implementer MUST complete: Stage 1 (spec compliance, line-by-line check) → Stage 2 (code quality, naming, conventions). Fix issues immediately in each stage. Never report DONE until both stages pass with NO issues. |
 | **Merge Lifecycle** | One merge worktree created at startup, ALL task merges go here. MUST NOT delete before all levels complete. After all levels, `finishing-a-development-branch` handles final cleanup. |
@@ -48,7 +48,7 @@ STEP 4: If INSIDE_ADDED_WORKTREE = NO (in primary working tree):
     2. Checkout new development branch in primary working tree
 
   // CRITICAL: This step executes for BOTH main/master AND development branches!
-  INVOKE: `/nbl.superpowers:nbl.using-git-worktrees create <base-name>-merge --parent feature/<base-name>`
+  INVOKE via **Skill tool** (NOT built-in EnterWorktree): `/nbl.superpowers:nbl.using-git-worktrees create <base-name>-merge --parent feature/<base-name>`
   // After invocation, you will be inside the newly created merge worktree
   → Setup complete, proceed to read plan and analyze dependencies
 ```
@@ -95,7 +95,7 @@ Level 2: ...                  # Depends on Level 1
 ```
 For each level:
     ├── Create worktrees for tasks in this level (max 2 per batch)
-    │   For each task, invoke **nbl.using-git-worktrees** skill with:
+    │   For each task, invoke **nbl.using-git-worktrees** skill via **Skill tool** (NOT built-in EnterWorktree) with:
     │   - Base name: `<base_name>`
     │   - Parent branch: `feature/<base_name>-merge`
     │   - Task id: `<task_id>`
@@ -321,6 +321,7 @@ Prompt templates are shared with serial subagent-driven-development:
 
 - Execute on main/master without user consent
 - Dispatch implementer without worktree isolation
+- Use built-in `EnterWorktree` tool - MUST invoke nbl.using-git-worktrees via **Skill tool** instead
 - Accept DONE before two-stage review completes
 - Skip TDD
 - Proceed with unfixed self-review issues
