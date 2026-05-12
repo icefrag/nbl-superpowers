@@ -137,6 +137,25 @@ if (StrUtil.isBlank(str))
 .eq(GeneralQuality::getType, GeneralQualityTypeEnum.NATIONAL.getCode())
 ```
 
+## 条件判断禁止魔法值
+
+- switch/if中涉及表达式类型、数据类型、运算符、状态码等业务常量时，必须使用枚举，禁止硬编码字符串
+
+```java
+// 禁止
+switch (expr.getType()) {
+    case "LITERAL":
+        return compileLiteral(expr);
+}
+
+// 推荐
+ExpressionTypeEnum type = EnumUtil.of(ExpressionTypeEnum.class, expr.getType());
+switch (type) {
+    case LITERAL:
+        return compileLiteral(expr);
+}
+```
+
 ## 业务异常处理
 
 - 禁止手动抛RuntimeException及其子类
