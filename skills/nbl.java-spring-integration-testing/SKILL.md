@@ -14,15 +14,14 @@ description: Use when writing Java Spring Boot integration tests that perform re
 >
 > 本 skill 提供一套经过验证的集成测试模式，覆盖以上场景。
 
-使用 `@SpringBootTest` + `@AutoConfigureMockMvc` + `@Transactional` 组合执行真实数据库 CRUD 操作，测试结束后自动回滚保证幂等性。
+使用 `BaseIntegrationTest` 作为测试基类，执行真实数据库 CRUD 操作，测试结束后自动回滚保证幂等性。
 
 核心特点：
 - **真实写库**：在真实数据库执行 CRUD，不使用 Mock
 - **自动回滚**：`@Transactional` 保证测试结束后数据自动回滚
-- **字段级验证**：新增操作验证所有必填字段都正确写入数据库，每个字段值都需要断言
-- **直接查询验证**：使用项目的 Mapper（如 MyBatis-Plus、TKMapper 等）直接查询数据库验证
+- **字段级验证**：新增操作验证所有必填字段都正确写入数据库
+- **直接查询验证**：使用项目的 Mapper 直接查询数据库验证
 - **多表关联验证**：主表和关联关系表都需要验证
-- **一个方法完成 CRUD**：Create-Read-Update-Delete 在一个测试方法中完成
 
 ## When to Use
 
@@ -38,133 +37,111 @@ When NOT to Use:
 
 ## Core Technique
 
-### 类注解
+### 继承 BaseIntegrationTest
 
 ```java
-@SpringBootTest
-@AutoConfigureMockMvc
-@Transactional
-class DepartmentControllerTest {
+class FormControllerTest extends BaseIntegrationTest {
+
+    @Autowired
+    private FormMapper formMapper;
 ```
 
-| 注解 | 作用 |
-|------|------|
-| `@SpringBootTest` | 启动完整 Spring 上下文 |
-| `@AutoConfigureMockMvc` | 自动配置 MockMvc |
-| `@Transactional` | 测试结束后自动回滚事务 |
-
-### 依赖注入
-
-> **注意：** 测试类中使用 `@Autowired` 是标准做法（生产代码应使用 `@RequiredArgsConstructor` + `final` 字段）。
-
-```java
-@Autowired
-private MockMvc mockMvc;
-
-@Autowired
-private ObjectMapper objectMapper;
-
-@Autowired
-private DepartmentMapper departmentMapper;
-
-@Autowired
-private DepartmentBusinessRelationMapper departmentBusinessRelationMapper;
-```
+`BaseIntegrationTest` 提供：
+- `@SpringBootTest` + `@AutoConfigureMockMvc` + `@Transactional`
+- `mockMvc` - 已注入，可直接使用
+- `objectMapper` - 已注入，可直接使用
+- `parseData(json, Class)` - 解析响应 data 字段为对象
+- `parseDataAsLong(json)` - 解析响应 data 字段为 Long
+- `TEST_TENANT_ID` / `OPERATOR_ID` - 测试用常量
 
 ### 测试数据常量
 
+项目应提供 `BaseIntegrationTest` 基类，包含：
 ```java
-private static final Long TEST_TENANT_ID = 1L;
-private static final Long TEST_SCHOOL_ID = 100L;
-private static final Long OPERATOR_ID = 1L;
+protected static final Long TEST_TENANT_ID = 1L;
+protected static final Long OPERATOR_ID = 1L;
 ```
 
 ## Complete CRUD Example
 
 ```java
-@Test
-void testCRUD() throws Exception {
-    // ========== 1. Create ==========
-    String deptName = "测试部门-" + System.currentTimeMillis();
-    DepartmentInsertReq insertReq = DepartmentInsertReq.builder()
-            .name(deptName)
-            .deptType(DepartmentTypeEnum.DEPARTMENT)
-            .schoolIds(List.of(TEST_SCHOOL_ID))
-            .parentId(0L)
-            .intro("测试部门介绍")
-            .build();
-    insertReq.setTenantId(TEST_TENANT_ID);
-    insertReq.setOperatorId(OPERATOR_ID);
+class FormControllerTest extends BaseIntegrationTest {
 
-    performPost("/departments/insert", insertReq);
+    @Autowired
+    private FormMapper formMapper;
 
-    // 验证主表字段
-    Department dept = departmentMapper.selectOne(
-            new LambdaQueryWrapper<Department>()
-                    .eq(Department::getTenantId, TEST_TENANT_ID)
-                    .eq(Department::getName, deptName)
-                    .last("LIMIT 1")
-    );
-    assertNotNull(dept, "部门创建后应存在于数据库");
-    assertEquals(deptName, dept.getName());
-    assertEquals(TEST_TENANT_ID, dept.getTenantId());
-    assertEquals(DepartmentTypeEnum.DEPARTMENT, dept.getDeptType());
+    @Test
+    void testCRUD() throws Exception {
+        String formName = "TestForm-" + System.currentTimeMillis();
+        String formKey = "FormKey_" + System.currentTimeMillis();
 
-    // 验证关联表
-    assertRelationCount(dept.getId(), DepartmentBusinessTypeEnum.SCHOOL, 1);
+        // ========== 1. Create ==========
+        Long formId = createForm(formName, formKey);
+        assertNotNull(formId, "创建表单后应返回ID");
 
-    // ========== 2. Read (API) ==========
-    mockMvc.perform(get("/departments/get-by-id")
-                    .param("id", dept.getId().toString())
-                    .param("tenantId", TEST_TENANT_ID.toString()))
-            .andExpect(status().isOk());
+        // 验证主表字段
+        Form form = formMapper.selectById(formId);
+        assertNotNull(form, "表单创建后应存在于数据库");
+        assertEquals(createdName, form.getFormName());
+        assertEquals(TEST_TENANT_ID, form.getTenantId());
+        assertEquals(OPERATOR_ID, form.getCreatedBy());
 
-    // ========== 3. Update ==========
-    String updatedName = "更新后部门-" + System.currentTimeMillis();
-    DepartmentUpdateReq updateReq = DepartmentUpdateReq.builder()
-            .id(dept.getId())
-            .name(updatedName)
-            .intro("更新后的介绍")
-            .schoolIds(List.of())  // 清空校区关联
-            .build();
-    updateReq.setTenantId(TEST_TENANT_ID);
-    updateReq.setOperatorId(OPERATOR_ID);
+        // ========== 2. GetById ==========
+        FormDetailResp detailResp = getFormById(formId);
+        assertNotNull(detailResp);
+        assertEquals(formId, detailResp.getId());
 
-    performPost("/departments/update", updateReq);
+        // ========== 3. Update ==========
+        String updatedName = "UpdatedForm-" + System.currentTimeMillis();
+        updateForm(formId, updatedName);
 
-    // 验证主表更新
-    Department updated = departmentMapper.selectById(dept.getId());
-    assertEquals(updatedName, updated.getName());
-    assertEquals("更新后的介绍", updated.getIntro());
+        // 验证主表更新
+        Form updated = formMapper.selectById(formId);
+        assertEquals(updatedName, updated.getFormName());
+        assertEquals(OPERATOR_ID, updated.getUpdatedBy());
+    }
 
-    // 验证关联表变化
-    assertRelationCount(dept.getId(), DepartmentBusinessTypeEnum.SCHOOL, 0);
+    // ==================== 辅助方法 ====================
 
-    // ========== 4. Delete ==========
-    IdsTenantReq deleteReq = IdsTenantReq.builder()
-            .ids(List.of(dept.getId()))
-            .build();
-    deleteReq.setTenantId(TEST_TENANT_ID);
+    private Long createForm(String formName, String formKey) throws Exception {
+        FormInsertReq insertReq = new FormInsertReq();
+        insertReq.setFormName(formName);
+        insertReq.setFormKey(formKey);
+        insertReq.setBusinessTypeCode("LEAVE");
+        insertReq.setTenantId(TEST_TENANT_ID);
+        insertReq.setOperatorId(OPERATOR_ID);
 
-    performPost("/departments/batch-delete", deleteReq);
+        MvcResult result = performPost("/forms/insert", insertReq).andReturn();
+        return parseDataAsLong(result.getResponse().getContentAsString());
+    }
 
-    // 验证删除（逻辑删除，MyBatis-Plus 自动过滤）
-    assertNull(departmentMapper.selectById(dept.getId()), "删除后应查询不到");
-}
+    private FormDetailResp getFormById(Long id) throws Exception {
+        MvcResult result = mockMvc.perform(get("/forms/get-by-id")
+                        .param("id", id.toString())
+                        .param("tenantId", TEST_TENANT_ID.toString()))
+                .andExpect(status().isOk())
+                .andReturn();
 
-// ==================== 辅助方法 ====================
+        return parseData(result.getResponse().getContentAsString(), FormDetailResp.class);
+    }
 
-private ResultActions performPost(String url, Object req) throws Exception {
-    return mockMvc.perform(post(url)
-            .contentType(MediaType.APPLICATION_JSON)
-            .content(objectMapper.writeValueAsString(req)))
-            .andExpect(status().isOk());
-}
+    private void updateForm(Long id, String updatedName) throws Exception {
+        FormUpdateReq updateReq = new FormUpdateReq();
+        updateReq.setId(id);
+        updateReq.setFormName(updatedName);
+        updateReq.setBusinessTypeCode("LEAVE");
+        updateReq.setTenantId(TEST_TENANT_ID);
+        updateReq.setOperatorId(OPERATOR_ID);
 
-private void assertRelationCount(Long deptId, DepartmentBusinessTypeEnum type, int expected) {
-    List<DepartmentBusinessRelation> relations =
-            departmentBusinessRelationMapper.selectByDepartmentIdAndType(deptId, type);
-    assertEquals(expected, relations.size());
+        performPost("/forms/update", updateReq);
+    }
+
+    private ResultActions performPost(String url, Object req) throws Exception {
+        return mockMvc.perform(post(url)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(req)))
+                .andExpect(status().isOk());
+    }
 }
 ```
 
@@ -175,9 +152,51 @@ private void assertRelationCount(Long deptId, DepartmentBusinessTypeEnum type, i
 | **真实写库** | 不 Mock 数据层，真正写入数据库验证 |
 | **自动回滚** | `@Transactional` 保证测试结束数据回滚 |
 | **DB 验证** | 通过项目的 Mapper 直接查询数据库验证状态 |
-| **不依赖特定 ORM** | 适配各种 Mapper 实现（MyBatis-Plus、TKMapper 等），根据项目技术栈自行调整查询方式 |
+| **继承基类** | 继承 `BaseIntegrationTest` 获取通用能力 |
 | **时间戳命名** | `System.currentTimeMillis()` 避免数据冲突 |
 | **幂等性** | 可重复运行多次，结果一致 |
+
+## BaseIntegrationTest 参考实现
+
+项目应提供类似以下基类：
+
+```java
+@SpringBootTest(
+    classes = Application.class,
+    webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
+    properties = {
+        "app.id=20005",
+        "apollo.meta=http://172.20.0.138:38080",
+        "apollo.bootstrap.enabled=true",
+        "apollo.bootstrap.namespaces=application,GUOGUOTECH.APPLICATION2",
+        "spring.application.name=xxx",
+        "spring.cloud.bootstrap.enabled=true"
+    }
+)
+@AutoConfigureMockMvc
+@Transactional
+public abstract class BaseIntegrationTest {
+
+    protected static final Long TEST_TENANT_ID = 1L;
+    protected static final Long OPERATOR_ID = 1L;
+
+    @Autowired
+    protected MockMvc mockMvc;
+
+    @Autowired
+    protected ObjectMapper objectMapper;
+
+    protected <T> T parseData(String json, Class<T> clazz) throws Exception {
+        JsonNode root = objectMapper.readTree(json);
+        return objectMapper.readValue(root.get("data").toString(), clazz);
+    }
+
+    protected Long parseDataAsLong(String json) throws Exception {
+        JsonNode root = objectMapper.readTree(json);
+        return root.get("data").asLong();
+    }
+}
+```
 
 ## Common Notes
 
@@ -191,15 +210,10 @@ private void assertRelationCount(Long deptId, DepartmentBusinessTypeEnum type, i
 - 使用 Mapper 直接查询，不走 Controller 事务
 - 总能读取到最新提交的数据，验证准确
 
-### 名称查询说明
-
-- 使用 `System.currentTimeMillis()` 生成唯一名称 + 按名称 + 租户查询查找记录，这是插入后验证的可靠方式
-- 如果你的 Create 接口返回创建后的 ID，可以直接使用 `selectById` 查询更简单
-
 ### 逻辑删除验证
 
 - MyBatis-Plus 自动过滤 `is_deleted=1` 的记录
-- 验证删除：`assertNull(departmentMapper.selectById(id))`
+- 验证删除：`assertNull(mapper.selectById(id))`
 
 ### 多表验证
 
@@ -210,46 +224,6 @@ private void assertRelationCount(Long deptId, DepartmentBusinessTypeEnum type, i
 
 - **必须验证所有必填字段**写入数据库后值正确
 - 不能只验证 HTTP 状态码，必须通过数据库查询验证每个字段
-- 示例：
-```java
-assertNotNull(dept, "部门创建后应存在于数据库");
-assertEquals(deptName, dept.getName());
-assertEquals(TEST_TENANT_ID, dept.getTenantId());
-assertEquals(DepartmentTypeEnum.DEPARTMENT, dept.getDeptType());
-```
-
-## Best Practices for Reducing Boilerplate
-
-对于多个关联表，可以继续提取辅助方法。示例中已展示 `performPost` 和 `assertRelationCount`，如果你的项目需要多个 helper，可以继续提取类似方法：
-
-```java
-// 批量设置 tenantId 和 operatorId
-private void setTestContext(BaseReq req) {
-    req.setTenantId(TEST_TENANT_ID);
-    req.setOperatorId(OPERATOR_ID);
-}
-```
-
-## Imports 参考
-
-> **注意**：以下 import 基于 MyBatis-Plus 示例。根据项目使用的 Mapper 框架（如 TKMapper、JPA 等）自行调整查询相关 import。
-
-```java
-// MyBatis-Plus 查询
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-// Spring 测试
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.test.web.servlet.MockMvc;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import org.junit.jupiter.api.Test;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-import static org.junit.jupiter.api.Assertions.*;
-import java.util.List;
-```
 
 ## Common Mistakes
 
@@ -264,9 +238,9 @@ mockMvc.perform(...).andExpect(status().isOk());
 
 ```java
 mockMvc.perform(...).andExpect(status().isOk());
-Department dept = departmentMapper.selectOne(...);
-assertNotNull(dept);
-assertEquals(expectedName, dept.getName());
+Form form = formMapper.selectById(formId);
+assertNotNull(form);
+assertEquals(expectedName, form.getFormName());
 ```
 
 ❌ **错误：每次测试手动清理数据**
@@ -275,37 +249,50 @@ assertEquals(expectedName, dept.getName());
 // 不需要手动删除，@Transactional 自动回滚
 @AfterEach
 void cleanup() {
-    departmentMapper.deleteById(deptId);
+    formMapper.deleteById(formId);
 }
 ```
 
 ✅ **正确：依赖 @Transactional 自动回滚**
 
 ```java
-@SpringBootTest
-@AutoConfigureMockMvc
-@Transactional  // 自动回滚，无需手动清理
-class XxxControllerTest { ... }
+class FormControllerTest extends BaseIntegrationTest { ... }
 ```
 
 ❌ **错误：使用 @WebMvcTest + Mock Repository**
 
 ```java
-@WebMvcTest(UserController.class)  // 只加载 Web 层，Repository 需要 Mock
+@WebMvcTest(UserController.class)  // 只加载 Web 层
 class UserControllerTest {
     @MockBean
     private UserRepository repository;  // Mock 不执行真实写库
 }
 ```
 
-✅ **正确：使用 @SpringBootTest 启动完整上下文**
+✅ **正确：继承 BaseIntegrationTest 启动完整上下文**
 
 ```java
-@SpringBootTest  // 启动完整上下文，包含所有 Bean
+@SpringBootTest(...)
 @AutoConfigureMockMvc
 @Transactional
-class UserControllerTest {
+class UserControllerTest extends BaseIntegrationTest {
     @Autowired
     private UserRepository repository;  // 真实 Repository，真实写库
 }
+```
+
+## Imports 参考
+
+```java
+import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
+import org.springframework.test.web.servlet.ResultActions;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.junit.jupiter.api.Assertions.*;
 ```
