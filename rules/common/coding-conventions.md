@@ -189,6 +189,12 @@ switch (type) {
 ## HTTP请求方法
 
 - 查询方法用GET，增删改用POST
+- Controller入参为对象时必须用`@PostMapping` + `@RequestBody`，禁止`@GetMapping`无注解接收对象（Feign调用需RequestBody序列化）
+
+```java
+@PostMapping("/query")
+IPage<FormListResp> query(@RequestBody FormPageQuery query);
+```
 
 ## 日期时间格式
 
