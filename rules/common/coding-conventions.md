@@ -95,10 +95,10 @@ default UserEntity selectByIdAndTenantId(Long id, Long tenantId) {
 
 ## 集合参数查询
 
-- Mapper层`.in()`必须先检查集合是否为null或empty，否则MyBatis-Plus会生成无效SQL
+- Mapper层`.in()`必须先检查集合是否为空，否则MyBatis-Plus会生成无效SQL
 
 ```java
-if (ids == null || ids.isEmpty()) { return Collections.emptyList(); }
+if (CollUtil.isEmpty(ids)) { return Collections.emptyList(); }
 ```
 
 ## 逻辑删除
@@ -116,17 +116,21 @@ if (ids == null || ids.isEmpty()) { return Collections.emptyList(); }
 - `of()`/`getDescByCode()`/`getCodeByDesc()`
 - 禁止枚举类内部手写静态方法遍历values()
 
-## 字符串判空
+## 空值判断
 
-- 使用`StrUtil.isBlank()`，禁止`!= null && !isEmpty()`组合判断
-- 路径：`cn.hutool.core.util.StrUtil`
+- 禁止手动`!= null` + `isEmpty()/size()`组合判断，统一使用Hutool工具类
+
+| 类型 | 非空判断 | 为空判断 | 路径 |
+|------|---------|---------|------|
+| String | `StrUtil.isNotBlank(str)` | `StrUtil.isBlank(str)` | `cn.hutool.core.util.StrUtil` |
+| Collection/List | `CollUtil.isNotEmpty(list)` | `CollUtil.isEmpty(list)` | `cn.hutool.core.collection.CollUtil` |
+| Map | `MapUtil.isNotEmpty(map)` | `MapUtil.isEmpty(map)` | `cn.hutool.core.map.MapUtil` |
+| 任意对象 | `ObjectUtil.isNotNull(obj)` | `ObjectUtil.isNull(obj)` | `cn.hutool.core.util.ObjectUtil` |
 
 ```java
-// 禁止
-if (str != null && !str.isEmpty())
-
-// 推荐
-if (StrUtil.isBlank(str))
+if (StrUtil.isBlank(name)) { ... }
+if (CollUtil.isNotEmpty(ids)) { ... }
+if (MapUtil.isEmpty(params)) { ... }
 ```
 
 ## 禁止魔术数字
