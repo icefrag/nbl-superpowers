@@ -215,7 +215,7 @@ IPage<FormListResp> query(@RequestBody FormPageQuery query);
 ## 非BFF服务Req上下文字段
 
 - 适用：除guozhi-edu-app和guozhi-ops-app以外的所有内部微服务
-- tenantId/operatorId：加`@Schema(hidden = true)` + `@NotNull`
+- tenantId/operatorId：`@Schema(hidden = true)`，禁止`@NotNull`或`requiredMode = REQUIRED`（由框架拦截器自动注入）
 
 ## Controller日志
 
