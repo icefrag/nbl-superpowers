@@ -245,7 +245,3 @@ IPage<FormListResp> query(@RequestBody FormPageQuery query);
 
 - Service可直接接收Req对象，无需转DTO
 - DTO用于Service间调用传参
-
-## 测试规范
-
-- 仅在需求明确说明需要测试时才开发，禁止主动编写测试
