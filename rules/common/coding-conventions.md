@@ -217,6 +217,21 @@ IPage<FormListResp> query(@RequestBody FormPageQuery query);
 - 适用：除guozhi-edu-app和guozhi-ops-app以外的所有内部微服务
 - tenantId/operatorId：`@Schema(hidden = true)`，禁止`@NotNull`或`requiredMode = REQUIRED`（由框架拦截器自动注入）
 
+## BFF Controller 上下文透传
+
+- BFF Controller 调用下游服务前，必须通过`UserHolder`设置Req/Query对象的`tenantId`和`operatorId`
+- 写操作（create/update/delete/approve等）：同时设置`tenantId` + `operatorId`
+- 读操作（get/page/detail等）：至少设置`tenantId`
+
+```java
+// 写操作
+req.setTenantId(UserHolder.getTenantIdLong());
+req.setOperatorId(UserHolder.getUserId());
+
+// 读操作
+query.setTenantId(UserHolder.getTenantIdLong());
+```
+
 ## Controller日志
 
 - 禁止在Controller层手动打印请求进入/完成日志
