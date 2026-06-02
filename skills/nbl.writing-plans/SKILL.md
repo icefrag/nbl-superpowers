@@ -85,6 +85,11 @@ Each task MUST include dependency information for parallel execution planning:
 **Dependencies:** None | Task 1, Task 2
 **Parallelizable:** Yes | No (reason if No)
 
+**Files:**
+- Create: `exact/path/to/file.py`
+- Modify: `exact/path/to/existing.py:123-145`
+- Test: `tests/exact/path/to/test.py`
+
 - [ ] **Step 1: Write the failing test**
 
 ```python

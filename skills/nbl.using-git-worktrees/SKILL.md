@@ -68,6 +68,57 @@ for task_id in 1 2 3; do
 done
 ```
 
+## Post-Creation Steps
+
+After creating the worktree, assess whether setup and baseline verification are needed before starting implementation:
+
+### 1. Assess: Is Setup Needed?
+
+**Skip to step 3 (Report Status) if ALL of the following are true:**
+- Worktree shares the same local dependency cache with the main worktree (e.g., same `~/.m2` for Maven)
+- Dependencies have not changed since the main worktree was last built
+- This is a parallel task worktree (not the first worktree in a parallel set)
+
+**Otherwise, run project setup:**
+
+```bash
+cd <worktree_path>
+
+# Java Maven
+if [ -f pom.xml ]; then mvn install -DskipTests; fi
+
+# Node.js
+if [ -f package.json ]; then npm install; fi
+
+# Python
+if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+if [ -f pyproject.toml ]; then poetry install; fi
+```
+
+### 2. Assess: Is Baseline Verification Needed?
+
+**Skip if** this is a parallel task worktree and another worktree in the same set has already verified the baseline.
+
+**Otherwise, run tests to verify clean baseline:**
+
+```bash
+# Use project-appropriate test command
+mvn test        # Java Maven
+npm test        # Node.js
+pytest          # Python
+```
+
+**If tests fail:** Report failures and ask whether to proceed or investigate. Do not proceed silently with failing baseline tests.
+
+### 3. Report Status
+
+```
+Worktree ready at <worktree_path>
+Baseline: <N> tests passing, 0 failures | skipped (shared baseline verified)
+Setup: <dependencies installed / skipped (shared cache)>
+Ready to implement <feature-name>
+```
+
 ## Cleanup
 
 ### Single Worktree
