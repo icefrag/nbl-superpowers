@@ -48,7 +48,7 @@ STEP 4: If INSIDE_ADDED_WORKTREE = NO (in primary working tree):
     2. Checkout new development branch in primary working tree
 
   // CRITICAL: This step executes for BOTH main/master AND development branches!
-  INVOKE via **Skill tool** (NOT built-in EnterWorktree): `/nbl.superpowers:nbl.using-git-worktrees create <base-name>-merge --parent feature/<base-name>`
+  INVOKE via **Skill tool** (NOT built-in EnterWorktree): `/nbl.using-git-worktrees create <base-name>-merge --parent feature/<base-name>`
   // After invocation, you will be inside the newly created merge worktree
   → Setup complete, proceed to read plan and analyze dependencies
 ```
@@ -115,7 +115,7 @@ For each completed agent:
 1. **Implementer completes:** implement → spec self-check → fix → quality self-check → fix → DONE
 2. **Rebase + Merge + Cleanup** - Invoke `nbl.using-git-worktrees` skill:
    ```
-   /nbl.superpowers:nbl.using-git-worktrees merge-sub <base_name> <task_id>
+   /nbl.using-git-worktrees merge-sub <base_name> <task_id>
    ```
    > ⚠️ The merge **must** happen inside the merge worktree. Do NOT attempt `git checkout $merge_branch` in the main workspace (Git forbids checking out the same branch in two worktrees simultaneously).
 

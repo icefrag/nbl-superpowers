@@ -229,7 +229,7 @@ Then: Cleanup merge worktree (Step 6)
 Invoke `nbl.using-git-worktrees` cleanup:
 
 ```
-Invoke via: /nbl.superpowers:nbl.using-git-worktrees cleanup <base_name> [--force]
+Invoke via: /nbl.using-git-worktrees cleanup <base_name> [--force]
 ```
 
 **Parallel mode additional cleanup:**
@@ -237,7 +237,7 @@ Invoke via: /nbl.superpowers:nbl.using-git-worktrees cleanup <base_name> [--forc
 After cleaning up the main worktree, also clean up the merge worktree:
 
 ```
-Invoke via: /nbl.superpowers:nbl.using-git-worktrees cleanup <name>-merge --force
+Invoke via: /nbl.using-git-worktrees cleanup <name>-merge --force
 ```
 
 **For Option 3:** Keep worktree.
