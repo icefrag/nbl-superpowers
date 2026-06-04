@@ -203,7 +203,7 @@ if [[ "$is_git_repo" == "true" ]]; then
           worktree_index=$((worktree_index + 1))
           # Get worktree git status using git -C (no cd needed)
           wt_status=$(get_git_status "$wt_path")
-          worktree_output="${worktree_output}  ${BLUE}${worktree_index}. ${wt_name} ${MAGENTA}→${RESET} ${MAGENTA}${branch_name}${RESET} ${wt_status}\n"
+          worktree_output="${worktree_output}  ${BLUE}${worktree_index}. 📂 ${wt_name} ${MAGENTA}→${RESET} 🌿 ${MAGENTA}${branch_name}${RESET} ${wt_status}\n"
         fi
       fi
     done <<< "$worktree_list"
