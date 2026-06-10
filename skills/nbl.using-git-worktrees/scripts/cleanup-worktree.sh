@@ -113,20 +113,19 @@ fi
 #-------------------------------------------------------------------------------
 
 if [[ -d "$WORKTREE_PATH" ]]; then
-    if ! git worktree remove --force "$WORKTREE_PATH"; then
-        echo "❌ Worktree 删除失败，请检查上述错误后重试"
-        exit 1
+    WT_ERR=""
+    if WT_ERR=$(git worktree remove --force "$WORKTREE_PATH" 2>&1); then
+        echo "✅ Worktree 已删除"
+    else
+        echo "⚠️  git worktree remove 失败: $WT_ERR"
+        echo "🧹 尝试手动清理目录..."
     fi
-    echo "✅ Worktree 已删除"
-    # Windows 兼容处理：git worktree remove 有时因文件锁定无法删除空目录，手动再删一次
+    # Windows 兼容：文件锁定可能阻止 git worktree remove，直接 rm -rf
     if [[ -d "$WORKTREE_PATH" ]]; then
-        echo "🧹 清理残留空目录..."
-        rmdir "$WORKTREE_PATH" 2>/dev/null || true
-        # 如果 rmdir 失败，尝试强制删除
-        if [[ -d "$WORKTREE_PATH" ]]; then
-            rm -rf "$WORKTREE_PATH" 2>/dev/null || true
-        fi
+        rm -rf "$WORKTREE_PATH" 2>/dev/null || true
     fi
+    [[ ! -d "$WORKTREE_PATH" ]] && echo "✅ Worktree 目录已清理" \
+        || echo "⚠️  目录仍被占用，请关闭占用进程后手动删除: $WORKTREE_PATH"
 else
     echo "📂 Worktree 目录不存在，跳过删除"
 fi
