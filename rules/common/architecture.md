@@ -96,6 +96,11 @@ paths:
 - **多单词功能名**: 必须使用kebab-case，如`/user-center`、`/get-order`
 - **禁止**: camelCase命名多单词路径(如`/getOrder`)，禁止使用/api、/inner、/outer、应用名等前缀
 
+## 接口路径稳定性 (NON-NEGOTIABLE)
+
+- refactor任务禁止修改API接口的URI path（`@RequestMapping`/`@PostMapping`/`@GetMapping`等注解的path值）
+- 路径变更属于破坏性变更，须走feature流程而非refactor
+
 ## 包结构规范
 
 ### app模块

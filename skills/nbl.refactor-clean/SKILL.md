@@ -135,3 +135,4 @@ mvn dependency:analyze
 - **不确定就跳过** — 保留死代码比破坏生产环境好
 - **清理与重构分开** — 先清理，后重构
 - **每批次后编译验证** — `mvn compile`
+- **禁止修改接口URI path** — refactor任务不得修改`@RequestMapping`/`@PostMapping`/`@GetMapping`等注解的path值，路径变更须走feature流程

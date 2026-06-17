@@ -9,7 +9,7 @@
 ```
 /nbl.orchestrate feature "<描述>"   # 新功能开发
 /nbl.orchestrate bugfix "<描述>"    # Bug修复
-/nbl.orchestrate refactor "<描述>"  # 代码重构
+/nbl.orchestrate refactor "<描述>"  # 代码重构（禁止修改接口URI path，须走feature流程）
 ```
 
 ## 功能实现工作流
