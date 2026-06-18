@@ -9,4 +9,4 @@ docs/
 **/CLAUDE.md
 **/claude.md
 .worktrees/
-test/
+test/.claude/worktrees/
