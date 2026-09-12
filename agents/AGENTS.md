@@ -146,6 +146,13 @@ A report names a symptom. Before you edit, grep every caller of the function you
 - 下载缓存目录固定为 `D:\uv\cache`，通过用户环境变量 `UV_CACHE_DIR` 配置（已设置；若未生效先检查该变量）
 - `pyproject.toml` 与 `uv.lock` 必须入库；`.venv/` 与缓存目录不入库
 
+## Windows/GitBash 环境约定
+
+- python 命令一律加 `-X utf8`，脚本开头加 `sys.stdout.reconfigure(encoding='utf-8')`，两者搭配而非二选一；含中文的文件读写显式 `io.open(..., encoding='utf-8')`——控制台默认 GBK，单靠其一仍会中文乱码/UnicodeEncodeError
+- Bash 给外部命令（ls/grep/mvn/kubectl 等）传路径一律正斜杠 `D:/workspace/...`，双引号反斜杠路径会被 bash 吞掉报 No such file；例外：`bash "C:\...\x.sh"` 本身接受 Windows 路径
+- 每次 Bash 调用的 cwd 不保证在仓库根（会话/子代理间会重置）：相对路径的复合命令以 `cd /<repo-root> && <命令>` 开头，或直接用绝对路径
+- node 等原生 Windows 程序读不到 Git Bash 的 /tmp（MSYS 虚拟路径展开成 D:\tmp 报 ENOENT）：临时数据文件放工作目录；大输出重定向到文件后再读，不依赖管道直读
+
 ---
 
 # 全局开发规范

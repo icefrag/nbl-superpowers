@@ -9,7 +9,7 @@ description: >
 
 # Dev Standards（guozhi 开发规范）
 
-规范的唯一事实来源是本目录下四个文件，本 SKILL.md 只做路由，不复制任何规则内容。
+规范的唯一事实来源是本目录下五个文件，本 SKILL.md 只做路由，不复制任何规则内容。
 
 ## 路由表
 
@@ -20,6 +20,7 @@ description: >
 | 技术设计文档/技术方案、新服务或新模块定位、架构分层、包结构设计 | `architecture.md` |
 | 编写/修改 Java 代码、SQL 建表/DML、Mapper XML | `coding-conventions.md` |
 | 新建类/接口/枚举/Req/Resp/Entity 或其字段命名 | `naming.md` |
+| 涉及文件/附件上传、资源绑定、资源回显或释放（ResourceApi / RefManagementApi） | `res-service.md` |
 
 实现一个新功能通常 = architecture + coding-conventions + naming 三份全读。
 
